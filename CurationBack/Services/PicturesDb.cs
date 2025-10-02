@@ -1,64 +1,37 @@
 ﻿using CurationBack.Models;
+using CurationBack.Utilities;
 using Newtonsoft.Json;
 
 namespace CurationBack.Services;
 
-public class PicturesDb
+public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb")
 {
-	private List<PictureItem> db;
-	private readonly string filePath;
-
-	public PicturesDb(AppSettings aps)
-	{
-		string dir = Directory.GetCurrentDirectory();
-		//D:\UserData\Documents\AppDev\CurationBack\CurationBack
-		if (aps.Polson.IsProduction)
-			filePath = Path.Combine(dir, @"wwwroot\docs\PicturesDb.json");
-		else
-			filePath = dir.Replace(@"CurationBack\CurationBack", @"CurationFront\public\docs\PicturesDb.json");
-
-		if (File.Exists(filePath))
-		{
-			string json = File.ReadAllText(filePath);
-			db = JsonConvert.DeserializeObject<List<PictureItem>>(json) ?? [];
-		}
-		else
-			db = [];
-
-	}
-	public string FilePath => filePath;
-
-	public List<PictureItem> Items => db;
-
-	public void SaveItem(PictureItem item)
-	{
-		db = [.. db.Where(a => a.FileName != item.FileName)];
-		db.Add(item);
-		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
-	}
-
-	public void SetDeleted(PictureItem item, bool isDeleted)
-	{
-		SetDeleted(item.FileName, isDeleted);
-	}
+	
 
 	public void SetDeleted(string fileName, bool isDeleted)
 	{
-		foreach (var a in db.Where(a => a.FileName == fileName))
-			a.IsDeleted = isDeleted;
+		int ix = db.FindIndex(a => a.FileName == fileName);
+		if (ix >= 0)
+		{
+			SetDeleted(db[ix].Id, isDeleted);
+		}
 
-		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
 	}
 
 	public void SyncFromFileList(List<PictureItem> piFromFiles)
 	{
-		//db = db.Where(a => a.FileName != fileName).ToList();
+		var master = db.FullOuterJoin(piFromFiles, a => a.FileName, b => b.FileName, (a, b, k) => (a, b)).ToList();
+		var missing = master.Where(t => t.a != null && t.b == null).Select(t => t.a!).ToList();
+		var orphans = master.Where(t => t.a == null && t.b != null).Select(t => t.b!).ToList();
 
-		// Mark all missing
+		foreach (var a in missing)
+			a.IsMissing = true;
 
-		// Add the orphans
+		SaveBatch(missing);
 
+		foreach (var a in orphans)
+			a.IsMissing = false;
 
-		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
+		SaveBatch(orphans);
 	}
 }

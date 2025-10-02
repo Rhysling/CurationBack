@@ -3,122 +3,55 @@ using CurationBack.Models;
 
 namespace CurationBack.Services;
 
-public class UsersDb
+public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 {
-	private readonly List<UserClient> db;
-	private readonly string filePath;
+	public override List<UserClient> GetAll() => throw new NotImplementedException();
 
-	public UsersDb(AppSettings aps)
-	{
-		string dir = Directory.GetCurrentDirectory();
-		//D:\UserData\Documents\AppDev\NextSemiBack\NextSemiBack
-		if (aps.Polson.IsProduction)
-			filePath = Path.Combine(dir, @"wwwroot\docs\UsersDb.json");
-		else
-		{
-			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-			filePath = dir[0..ix] + @"CurationFront\public\docs\UsersDb.json";
-			//filePath = dir.Replace(@"CurationBack\CurationBack", @"CurationFront\public\docs\UsersDb.json");
+	public override UserClient? GetById(int id) => throw new NotImplementedException();
 
-		}
+	public List<UserClientRemote> GetAllRemote() => [.. db.Where(a => !a.IsDeleted)];
 
-		if (File.Exists(filePath))
-		{
-			string json = File.ReadAllText(filePath);
-			db = JsonConvert.DeserializeObject<List<UserClient>>(json) ?? [];
-		}
-		else
-			db = [];
-
-	}
-
-
-	// Properties
-	public string FilePath => filePath;
-
-
-	// Methods
-
-	public List<UserClientRemote> GetAll()
-	{
-		return [.. db.Select(u => new UserClientRemote
-		{
-			UserId = u.UserId,
-			Email = u.Email,
-			FullName = u.FullName,
-			Token = u.Token,
-			IsAdmin = u.IsAdmin,
-			IsDisabled = u.IsDisabled
-		})];
-	}
+	public UserClientRemote? GetByIdRemote(int id) => db.FirstOrDefault(a => a.Id == id && !a.IsDeleted);
 
 	public UserClientRemote? FindByEmail(string email)
 	{
-		UserClient? u = db.FirstOrDefault(a => a.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
+		var uc = FindUcByEmail(email);
 
-		if (u is null)
+		if (uc is null)
 			return null;
 
-		return new UserClientRemote
+		return uc;
+	}
+
+	public UserClientRemote SaveItem(UserClientRemote ucr)
+	{
+		UserClient uc = new()
 		{
-			UserId = u.UserId,
-			Email = u.Email,
-			FullName = u.FullName,
-			Token = u.Token,
-			IsAdmin = u.IsAdmin,
-			IsDisabled = u.IsDisabled
+			Id = ucr.Id,
+			Email  = ucr.Email,
+			FullName = ucr.FullName,
+			Token = ucr.Token,
+			IsAdmin = ucr.IsAdmin,
+			IsDisabled = ucr.IsDisabled,
+			IsDeleted = ucr.IsDeleted
 		};
-	}
 
-	public UserClient? FindUcByEmail(string email)
-	{
-		return db.FirstOrDefault(a => a.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
-	}
+	var ucExisting = FindUcByEmail(ucr.Email);
 
-	public UserClientRemote SaveUser(UserClientRemote ucr)
-	{
-		var u = FindUcByEmail(ucr.Email);
+		if (ucExisting is not null)
+			uc.PwHash = ucExisting.PwHash;
+		
 
-		if (u is not null)
-		{
-			//u.UserId
-			//u.Email
-			//u.PwHash = user.PwHash;
-			u.FullName = ucr.FullName;
-			u.Token = ucr.Token;
-			u.IsAdmin = ucr.IsAdmin;
-			u.IsDisabled = ucr.IsDisabled;
-		}
-		else
-		{
-			ucr.UserId = db.Count != 0 ? db.Max(a => a.UserId) + 1 : 1;
-			ucr.Email = ucr.Email.ToLower();
-
-			var uc = new UserClient
-			{
-				UserId = ucr.UserId,
-				Email = ucr.Email,
-				PwHash = null,
-				FullName = ucr.FullName,
-				Token = ucr.Token,
-				IsAdmin = ucr.IsAdmin,
-				IsDisabled = ucr.IsDisabled
-			};
-
-			db.Add(uc);
-		}
-
-		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
-		return ucr;
+		return base.SaveItem(uc);
 	}
 
 	public void SavePassword(string email, string pw)
 	{
-		var u = FindUcByEmail(email);
+		var uc = FindUcByEmail(email);
 
-		if (u is not null)
+		if (uc is not null)
 		{
-			u.PwHash = BCrypt.Net.BCrypt.EnhancedHashPassword(pw, 13);
+			uc.PwHash = BCrypt.Net.BCrypt.EnhancedHashPassword(pw, 13);
 			File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
 		}
 	}
@@ -136,12 +69,14 @@ public class UsersDb
 
 	public bool ValidatePassword(string email, string pw)
 	{
-		var u = FindUcByEmail(email);
+		var uc = FindUcByEmail(email);
 
-		if (u is null || u.PwHash is null)
+		if (uc is null || uc.PwHash is null)
 			return false;
 
-		return BCrypt.Net.BCrypt.EnhancedVerify(pw, u.PwHash);
+		return BCrypt.Net.BCrypt.EnhancedVerify(pw, uc.PwHash);
 	}
 
+
+	private UserClient? FindUcByEmail(string email) => db.FirstOrDefault(a => a.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
 }

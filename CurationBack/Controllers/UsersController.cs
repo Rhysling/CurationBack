@@ -75,7 +75,7 @@ namespace CurationBack.Controllers
 
 			var ucr = new UserClientRemote
 			{
-				UserId = u.UserId,
+				Id = u.Id,
 				Email = u.Email,
 				FullName = u.FullName,
 				IsAdmin = u.IsAdmin,
@@ -94,7 +94,7 @@ namespace CurationBack.Controllers
 			var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
 			var claims = new[] {
-				new Claim("UserId", user.UserId.ToString()),
+				new Claim("UserId", user.Id.ToString()),
 				new Claim("Email", user.Email),
 				new Claim("FullName", user.FullName ?? ""),
 				new Claim("IsAdmin", user.IsAdmin.ToString())
@@ -135,11 +135,11 @@ namespace CurationBack.Controllers
 			{
 				var ucr = new UserClientRemote
 				{
-					UserId = 0,
+					Id = 0,
 					Email = ur.Email.ToLower(),
 					FullName = ur.FullName ?? ""
 				};
-				ucr = db.SaveUser(ucr);
+				ucr = db.SaveItem(ucr);
 
 				ucr.Token = GenerateJSONWebToken(ucr);
 
