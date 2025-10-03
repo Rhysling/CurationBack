@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using CurationBack.Models;
+﻿using CurationBack.Models;
 
 namespace CurationBack.Services;
 
@@ -13,15 +12,7 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 
 	public UserClientRemote? GetByIdRemote(int id) => db.FirstOrDefault(a => a.Id == id && !a.IsDeleted);
 
-	public UserClientRemote? FindByEmail(string email)
-	{
-		var uc = FindUcByEmail(email);
-
-		if (uc is null)
-			return null;
-
-		return uc;
-	}
+	public UserClientRemote? FindByEmail(string email) => FindUcByEmail(email);
 
 	public UserClientRemote SaveItem(UserClientRemote ucr)
 	{
@@ -41,7 +32,6 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 		if (ucExisting is not null)
 			uc.PwHash = ucExisting.PwHash;
 		
-
 		return base.SaveItem(uc);
 	}
 
@@ -52,7 +42,7 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 		if (uc is not null)
 		{
 			uc.PwHash = BCrypt.Net.BCrypt.EnhancedHashPassword(pw, 13);
-			File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
+			SaveFile();
 		}
 	}
 
@@ -63,7 +53,7 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 		if (uc is not null)
 		{
 			uc.Token = token;
-			File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
+			SaveFile();
 		}
 	}
 
@@ -76,7 +66,6 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 
 		return BCrypt.Net.BCrypt.EnhancedVerify(pw, uc.PwHash);
 	}
-
 
 	private UserClient? FindUcByEmail(string email) => db.FirstOrDefault(a => a.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
 }

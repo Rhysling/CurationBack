@@ -7,7 +7,7 @@ public class PictureItem : IDbItem
 {
 	public int Id { get; set; }
 	public required string FileName { get; set; }
-	public int TimeStamp { get; set; }
+	public int Seq { get; set; }
 	public List<string> Keywords { get; set; } = [];
 	public string? Description { get; set; }
 	public bool IsMissing { get; set; }

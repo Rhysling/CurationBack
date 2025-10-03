@@ -46,12 +46,12 @@ namespace CurationBack.Controllers
 			return Ok(ucr);
 		}
 
-		// POST: api/Users/GetAll
+		// GET: api/Users/GetAll
 		[AdminAuthorize]
 		[HttpGet("[action]")]
-		public IActionResult GetAll()
+		public List<UserClientRemote> GetAll()
 		{
-			return Ok(db.GetAll());
+			return db.GetAllRemote();
 		}
 
 

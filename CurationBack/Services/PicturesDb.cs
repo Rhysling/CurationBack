@@ -1,12 +1,40 @@
 ﻿using CurationBack.Models;
 using CurationBack.Utilities;
-using Newtonsoft.Json;
 
 namespace CurationBack.Services;
 
 public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb")
 {
-	
+	public override void SaveBatch(List<PictureItem> items)
+	{
+		int ix, i = 0;
+		int minSeq = db.Count != 0 ? db.Min(a => a.Seq) - 10 : 100;
+		int ic = items.Count;
+		int[] itemsSeq = [.. Enumerable.Range(minSeq, ic).Select(a => a - ic)];
+
+		foreach (var item in items)
+		{
+			ix = db.FindIndex(a => a.FileName == item.FileName);
+			if (ix >= 0)
+			{
+				item.Id = db[ix].Id;
+				item.Seq = db[ix].Seq;
+				db.RemoveAt(ix);
+			}
+			else
+			{
+				if (item.Id == 0)
+					item.Id = db.Count != 0 ? db.Max(a => a.Id) + 1 : 1;
+
+				item.Seq = itemsSeq[i++];
+			}
+
+			db.Add(item);
+
+		}
+		ReSequence();
+		SaveFile();
+	}
 
 	public void SetDeleted(string fileName, bool isDeleted)
 	{
@@ -15,7 +43,7 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		{
 			SetDeleted(db[ix].Id, isDeleted);
 		}
-
+		SaveFile();
 	}
 
 	public void SyncFromFileList(List<PictureItem> piFromFiles)
@@ -33,5 +61,17 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 			a.IsMissing = false;
 
 		SaveBatch(orphans);
+	}
+
+
+
+	private void ReSequence()
+	{
+		int seq = 100;
+		foreach (var item in db.OrderBy(a => a.Seq))
+		{
+			item.Seq = seq;
+			seq += 10;
+		}
 	}
 }

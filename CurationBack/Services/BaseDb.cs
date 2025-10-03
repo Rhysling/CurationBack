@@ -17,9 +17,9 @@ public class BaseDb<TItem> where TItem : IDbItem
 		else
 		{
 			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-			dbFullPath = dir[0..ix] + @$"CurationFront\public\docs\{dbName}.json";
-			//filePath = dir.Replace(@"CurationBack\CurationBack", @"CurationFront\public\docs\UsersDb.json");
-
+			dbFullPath = dir[0..ix] + @$"CurationFront\db\{dbName}.json";
+			// @$"CurationFront\public\docs\{dbName}.json";
+			//D:\UserData\Documents\AppDev\CurationFront\db
 		}
 
 		if (File.Exists(dbFullPath))
@@ -31,7 +31,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 			db = [];
 	}
 
-	public string FilePath => dbFullPath;
+	protected string FilePath => dbFullPath;
 
 	public virtual List<TItem> GetAll() => [.. db.Where(a => !a.IsDeleted)];
 
@@ -53,7 +53,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 		return item;
 	}
 
-	public void SaveBatch(List<TItem> items)
+	public virtual void SaveBatch(List<TItem> items)
 	{
 		int ix;
 
@@ -80,8 +80,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 	}
 
 
-
-	private void SaveFile()
+	protected void SaveFile()
 	{
 		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
 	}

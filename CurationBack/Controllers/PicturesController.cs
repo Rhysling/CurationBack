@@ -1,4 +1,5 @@
-﻿using CurationBack.Services;
+﻿using CurationBack.Models;
+using CurationBack.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,9 +12,9 @@ public class PicturesController(PicturesDb db) : ControllerBase
 	// GET: api/Pictures/GetAll
 	[AllowAnonymous]
 	[HttpGet("[action]")]
-	public IActionResult GetAll()
+	public List<PictureItem> GetAll()
 	{
-		return Ok(db.GetAll());
+		return db.GetAll();
 	}
 
 
