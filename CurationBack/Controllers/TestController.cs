@@ -1,4 +1,5 @@
 ﻿using CurationBack.Services;
+using CurationBack.Services.FiltersAttributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,7 +22,7 @@ public class TestController(PicturesDb tDb) : ControllerBase
 	}
 
 	[HttpGet("[action]")]
-	[Authorize()]
+	[UserAuthorize()]
 	public string GetSecuredValue()
 	{
 		//var user = HttpContext.User;
@@ -33,7 +34,7 @@ public class TestController(PicturesDb tDb) : ControllerBase
 	}
 
 	[HttpGet("[action]")]
-	[Authorize(Roles = "Admin")]
+	[AdminAuthorize()]
 	public string GetAdminValue()
 	{
 		//var user = HttpContext.User;

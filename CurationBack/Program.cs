@@ -39,8 +39,15 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 
-app.UseHttpsRedirection();
-
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+	app.UseDeveloperExceptionPage();
+}
+else
+{
+	app.UseHttpsRedirection();
+}
 
 app.Use(async (context, next) =>
 {
@@ -57,7 +64,6 @@ app.Use(async (context, next) =>
 	}
 });
 
-
 var provider = new FileExtensionContentTypeProvider();
 provider.Mappings[".html"] = "text/html";
 provider.Mappings[".webmanifest"] = "application/manifest+json";
@@ -67,20 +73,22 @@ app.UseStaticFiles(new StaticFileOptions()
 	ContentTypeProvider = provider
 });
 
+app.UseRouting();
+
 if (app.Environment.IsDevelopment())
 	app.UseCors(builder =>
 	{
 		builder
 		//.AllowAnyOrigin()
-		.WithOrigins("http://localhost:5050", "http://127.0.0.1:5050")
 		//.AllowAnyMethod()
+		.WithOrigins("http://localhost:5050", "http://127.0.0.1:5050")
 		.WithMethods("POST", "GET", "OPTIONS", "PUT")
 		.AllowAnyHeader()
 		.AllowCredentials();
 	});
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

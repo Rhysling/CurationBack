@@ -1,6 +1,5 @@
 ﻿using CurationBack.Models;
 using CurationBack.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CurationBack.Controllers;
@@ -9,14 +8,11 @@ namespace CurationBack.Controllers;
 [ApiController]
 public class PicturesController(PicturesDb db) : ControllerBase
 {
-	// GET: api/Pictures/GetAll
-	[AllowAnonymous]
+	// GET: api/Pictures/GetPublicList
 	[HttpGet("[action]")]
-	public List<PictureItem> GetAll()
+	public List<PictureItem> GetPublicList()
 	{
-		return db.GetAll();
+		return db.GetPublicList();
 	}
-
-
 
 }

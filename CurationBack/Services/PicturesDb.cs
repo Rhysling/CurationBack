@@ -5,6 +5,8 @@ namespace CurationBack.Services;
 
 public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb")
 {
+	public List<PictureItem> GetPublicList() => [.. db.Where(a => !a.IsDeleted && !a.IsMissing)];
+
 	public override void SaveBatch(List<PictureItem> items)
 	{
 		int ix, i = 0;

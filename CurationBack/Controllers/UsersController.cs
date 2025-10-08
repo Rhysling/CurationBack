@@ -67,7 +67,7 @@ namespace CurationBack.Controllers
 			if (u is null)
 				return null;
 
-			if (u.IsDisabled)
+			if (u.IsDisabled || u.IsDeleted)
 				return null;
 
 			if (!db.ValidatePassword(login.Email, login.Pw))
@@ -107,7 +107,7 @@ namespace CurationBack.Controllers
 					expires: DateTime.Now.AddDays(10),
 					signingCredentials: credentials);
 
-			return "Bearer " + new JwtSecurityTokenHandler().WriteToken(token);
+			return new JwtSecurityTokenHandler().WriteToken(token);
 		}
 
 		private (UserClientRemote? user, List<string> problems) RegisterUser(UserRegister ur)

@@ -12,14 +12,13 @@ namespace CurationBack.Runner.Runs
 		{
 			var ur = new UserRegister
 			{
-				FullName = "Bob Test User",
-				Email = "bob@tester2.com",
-				Pw = "Password123!"
+				FullName = "Bob User",
+				Email = "rpkummer@gmail.com",
+				Pw = "vestal"
 			};
 
 			var uOps = new Ops.UserDbOps(aps, _udb);
-			string res = uOps.RegisterUser(ur);
-			Console.WriteLine(res);
+			uOps.RegisterUser(ur);
 		}
 	}
 }
