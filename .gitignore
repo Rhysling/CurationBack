@@ -187,3 +187,4 @@ node_modules/
 **/app[Ss]rc/**/*.js.map
 TestEmails/
 Secrets.cs
+**/Db

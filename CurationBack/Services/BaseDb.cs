@@ -1,5 +1,6 @@
 ﻿using CurationBack.Models;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace CurationBack.Services;
 
@@ -17,7 +18,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 		else
 		{
 			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-			dbFullPath = dir[0..ix] + @$"CurationFront\db\{dbName}.json";
+			dbFullPath = dir[0..ix] + @$"CurationBack\CurationBack\Db\{dbName}.json";
 			// @$"CurationFront\public\docs\{dbName}.json";
 			//D:\UserData\Documents\AppDev\CurationFront\db
 		}
@@ -33,7 +34,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 
 	protected string FilePath => dbFullPath;
 
-	public virtual List<TItem> GetAll() => [.. db.Where(a => !a.IsDeleted)];
+	public virtual List<TItem> GetAll(bool includeDeleted = false) => [.. includeDeleted ? db : db.Where(a => !a.IsDeleted)];
 
 	public virtual TItem? GetById(int id) => db.FirstOrDefault(a => a.Id == id && !a.IsDeleted);
 
@@ -53,9 +54,10 @@ public class BaseDb<TItem> where TItem : IDbItem
 		return item;
 	}
 
-	public virtual void SaveBatch(List<TItem> items)
+	public virtual List<TItem> SaveBatch(List<TItem> items)
 	{
 		int ix;
+		List<TItem> result = [];
 
 		foreach (var item in items)
 		{
@@ -67,9 +69,11 @@ public class BaseDb<TItem> where TItem : IDbItem
 				db.RemoveAt(ix);
 
 			db.Add(item);
+			result.Add(item);
 		}
 
 		SaveFile();
+		return result;
 	}
 
 	public void SetDeleted(int id, bool isDeleted)

@@ -5,14 +5,26 @@ namespace CurationBack.Services;
 
 public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb")
 {
-	public List<PictureItem> GetPublicList() => [.. db.Where(a => !a.IsDeleted && !a.IsMissing)];
+	public List<PictureItem> GetAll(bool includeMissing = false, bool includeDeleted = false)
+	{
+		var q = db.AsQueryable();
 
-	public override void SaveBatch(List<PictureItem> items)
+		if (!includeMissing)
+			q = q.Where(a => !a.IsMissing);
+
+		if (!includeDeleted)
+			q = q.Where(a => !a.IsDeleted);
+
+		return [.. q];
+	}
+
+	public override List<PictureItem> SaveBatch(List<PictureItem> items)
 	{
 		int ix, i = 0;
 		int minSeq = db.Count != 0 ? db.Min(a => a.Seq) - 10 : 100;
 		int ic = items.Count;
 		int[] itemsSeq = [.. Enumerable.Range(minSeq, ic).Select(a => a - ic)];
+		List<PictureItem> result = [];
 
 		foreach (var item in items)
 		{
@@ -32,10 +44,15 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 			}
 
 			db.Add(item);
-
+			result.Add(item);
 		}
 		ReSequence();
 		SaveFile();
+
+		foreach (var item in result)
+			item.Seq = db.First(a => a.Id == item.Id).Seq;
+
+		return result;
 	}
 
 	public void SetDeleted(string fileName, bool isDeleted)
