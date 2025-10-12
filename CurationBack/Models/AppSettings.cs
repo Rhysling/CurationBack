@@ -12,7 +12,6 @@ public class AS_Polson
 {
 	public string IsProductionString { get; set; }
 	public bool IsProduction => IsProductionString == "true";
-	public string AdminPw { get; set; }
 }
 
 public class AS_Jwt

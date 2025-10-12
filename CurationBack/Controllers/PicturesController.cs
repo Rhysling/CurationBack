@@ -33,9 +33,26 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 	[AdminAuthorize()]
 	public List<PictureItem> GetCleanPics()
 	{
-		// TODO: Get the file list from disk
-		// Run SyncFromFileList
-		//
+		string dir = Directory.GetCurrentDirectory();
+		if (aps.Polson.IsProduction)
+			dir = Path.Combine(dir, @$"wwwroot\pics");
+		else
+		{
+			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
+			dir = dir[0..ix] + @$"CurationFront\public\pics";
+		}
+
+		var fileNames = Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
+			.Where(f => f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+			)
+			.Select(a => new FileInfo(a).Name)
+			.OrderBy(a => a)
+			.ToList();
+
+		db.SyncFromFileList(fileNames);
 		return db.GetAll(includeMissing: true, includeDeleted: true);
 	}
 
@@ -72,6 +89,8 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 
 			using (var stream = new FileStream(dir, FileMode.Create))
 				file.CopyTo(stream);
+
+			picItem.IsMissing = false;
 
 			return Ok(db.SaveItem(picItem));
 		}

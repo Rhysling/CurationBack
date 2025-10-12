@@ -14,7 +14,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 		string dir = Directory.GetCurrentDirectory();
 		//D:\UserData\Documents\AppDev\NextSemiBack\NextSemiBack
 		if (aps.Polson.IsProduction)
-			dbFullPath = Path.Combine(dir, @$"wwwroot\docs\{dbName}.json");
+			dbFullPath = Path.Combine(dir, @$"Db\{dbName}.json");
 		else
 		{
 			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);

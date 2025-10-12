@@ -65,8 +65,10 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		SaveFile();
 	}
 
-	public void SyncFromFileList(List<PictureItem> piFromFiles)
+	public void SyncFromFileList(List<string> fileNames)
 	{
+		var piFromFiles = fileNames.Select(a => new PictureItem { FileName = a });
+
 		var master = db.FullOuterJoin(piFromFiles, a => a.FileName, b => b.FileName, (a, b, k) => (a, b)).ToList();
 		var missing = master.Where(t => t.a != null && t.b == null).Select(t => t.a!).ToList();
 		var orphans = master.Where(t => t.a == null && t.b != null).Select(t => t.b!).ToList();

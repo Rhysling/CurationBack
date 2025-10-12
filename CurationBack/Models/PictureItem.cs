@@ -6,7 +6,7 @@ namespace CurationBack.Models;
 public class PictureItem : IDbItem
 {
 	public int Id { get; set; }
-	public required string FileName { get; set; }
+	public string FileName { get; set; } = "";
 	public int Seq { get; set; }
 	public List<string> Keywords { get; set; } = [];
 	public string? Description { get; set; }
