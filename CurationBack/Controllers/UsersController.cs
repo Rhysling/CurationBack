@@ -46,6 +46,24 @@ namespace CurationBack.Controllers
 			return Ok(ucr);
 		}
 
+		// POST: api/Users/Save
+		[AdminAuthorize]
+		[HttpPost("[action]")]
+		public IActionResult Save([FromBody] UserClientRemote user)
+		{
+			return Ok(db.SaveItem(user));
+		}
+
+		// POST: api/Users/UpdatePassword
+		[AdminAuthorize]
+		[HttpPost("[action]")]
+		public IActionResult UpdatePassword([FromBody] UserLogin upw)
+		{
+			db.SavePassword(upw.Email, upw.Pw);
+			return Ok();
+		}
+
+
 		// GET: api/Users/GetAll
 		[AdminAuthorize]
 		[HttpGet("[action]")]

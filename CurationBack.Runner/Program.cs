@@ -3,7 +3,7 @@ using CurationBack.Services;
 using CurationBack.Runner.Runs;
 
 var aps = new AppSettings { 
-	Polson = new AS_Polson { IsProductionString = "false", AdminPw = "placeholder" },
+	Polson = new AS_Polson { IsProductionString = "false" },
 	Jwt = new AS_Jwt { Key = "placeholder_key_please_change_please_change", Issuer = "polson.com" }
 };
 
