@@ -18,6 +18,11 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		return [.. q];
 	}
 
+	public PictureItem FindBySlug(string slug)
+	{
+		return db.Where(a => a.FileName.StartsWith(slug)).FirstOrDefault() ?? new PictureItem();
+	}
+
 	public override List<PictureItem> SaveBatch(List<PictureItem> items)
 	{
 		int ix, i = 0;

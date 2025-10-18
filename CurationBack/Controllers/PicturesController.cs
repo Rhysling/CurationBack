@@ -20,6 +20,13 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 		return db.GetAll(includeMissing: false, includeDeleted: false);
 	}
 
+	// GET: api/Pictures/GetBySlug
+	[HttpGet("[action]")]
+	public PictureItem GetBySlug(string slug)
+	{
+		return db.FindBySlug(slug);
+	}
+
 	// GET: api/Pictures/GetAll
 	[HttpGet("[action]")]
 	[AdminAuthorize()]
