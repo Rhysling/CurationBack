@@ -7,11 +7,11 @@ var aps = new AppSettings {
 	Jwt = new AS_Jwt { Key = "placeholder_key_please_change_please_change", Issuer = "polson.com" }
 };
 
-var uRuns = new UserRuns(aps);
-uRuns.RegisterUser();
+//var uRuns = new UserRuns(aps);
+//uRuns.RegisterUser();
 
-//var picRuns = new PictureRuns(aps);
-//picRuns.LoadPicturesFromDir();
+var picRuns = new PictureRuns(aps);
+picRuns.MakeTimestamps();
 
 
 Console.WriteLine("Done.");

@@ -6,7 +6,7 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 {
 	public override List<UserClient> GetAll(bool IsDeleted = false) => throw new NotImplementedException();
 
-	public override UserClient? GetById(int id) => throw new NotImplementedException();
+	public override UserClient? GetById(int id, bool includeDeleted = false) => throw new NotImplementedException();
 
 	public List<UserClientRemote> GetAllRemote(bool includeDeleted = false)
 	{

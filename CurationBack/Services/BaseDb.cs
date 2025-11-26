@@ -36,7 +36,7 @@ public class BaseDb<TItem> where TItem : IDbItem
 
 	public virtual List<TItem> GetAll(bool includeDeleted = false) => [.. includeDeleted ? db : db.Where(a => !a.IsDeleted)];
 
-	public virtual TItem? GetById(int id) => db.FirstOrDefault(a => a.Id == id && !a.IsDeleted);
+	public virtual TItem? GetById(int id, bool includeDeleted = false) => db.FirstOrDefault(a => a.Id == id && (includeDeleted || !a.IsDeleted));
 
 	public virtual TItem SaveItem(TItem item)
 	{

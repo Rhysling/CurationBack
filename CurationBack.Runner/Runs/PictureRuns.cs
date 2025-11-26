@@ -54,4 +54,19 @@ public class PictureRuns(AppSettings aps)
 
 		_pdb.SaveBatch(pics);
 	}
+
+	public void MakeTimestamps()
+	{
+		var pics = _pdb.GetAll(false, true).Where(a => a.Ts == 0).OrderBy(a => a.Seq);
+
+		int ts = 1_761_162_200;
+
+		foreach (var p in pics)
+		{
+			p.Ts = ts;
+			ts -= 10;
+		}
+
+		_pdb.SaveBatch([..pics]);
+	}
 }
