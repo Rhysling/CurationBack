@@ -18,6 +18,7 @@ if (aps != null)
 
 builder.Services.AddSingleton<PicturesDb>();
 builder.Services.AddSingleton<UsersDb>();
+builder.Services.AddSingleton<PicFileOps>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>

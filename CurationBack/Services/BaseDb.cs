@@ -1,6 +1,5 @@
 ﻿using CurationBack.Models;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace CurationBack.Services;
 
@@ -79,10 +78,14 @@ public class BaseDb<TItem> where TItem : IDbItem
 	public void SetDeleted(int id, bool isDeleted)
 	{
 		db.Where(a => a.Id == id).ToList().ForEach(a => a.IsDeleted = isDeleted);
-		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
 		SaveFile();
 	}
 
+	public void Destroy(int id)
+	{
+		db = [.. db.Where(a => a.Id != id)];
+		SaveFile();
+	}
 
 	protected void SaveFile()
 	{

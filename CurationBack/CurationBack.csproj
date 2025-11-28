@@ -8,13 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <Compile Remove="Db\**" />
+    <Content Remove="Db\**" />
+    <EmbeddedResource Remove="Db\**" />
+    <None Remove="Db\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Db\" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
 </Project>

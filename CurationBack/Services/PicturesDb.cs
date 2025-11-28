@@ -23,6 +23,11 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		return db.Where(a => a.FileName.StartsWith(slug)).FirstOrDefault() ?? new PictureItem();
 	}
 
+	public int CountByFileName(string fileName)
+	{
+		return db.Count(a => a.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+	}
+
 	public override List<PictureItem> SaveBatch(List<PictureItem> items)
 	{
 		int ix, i = 0;
@@ -89,6 +94,14 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		SaveBatch(orphans);
 	}
 
+	public int RemoveMissing()
+	{
+		int mc = db.Count(a => a.IsMissing);
+		db = [.. db.Where(a => !a.IsMissing)];
+		SaveFile();
+
+		return mc;
+	}
 
 
 	private void ReSequence()

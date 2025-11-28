@@ -10,7 +10,7 @@ namespace CurationBack.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
+public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps) : ControllerBase
 {
 	// GET: api/Pictures/GetPublicList
 	[HttpGet("[action]")]
@@ -82,7 +82,7 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 		if (oldPicItem == null)
 			return BadRequest("Picture not found.");
 
-		if (string.Compare(oldPicItem.FileName, picItem.FileName, StringComparison.Ordinal) == 0)
+		if (oldPicItem.FileName.Equals(picItem.FileName, StringComparison.Ordinal))
 			return Ok(db.SaveItem(picItem));
 
 		// Rename the file
@@ -100,28 +100,8 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 				|| newFn.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
 			) return BadRequest("Filename must have a valid image extension.");
 
-		try
-		{
-			string dir = Directory.GetCurrentDirectory();
-			if (aps.Polson.IsProduction)
-				dir = Path.Combine(dir, @$"wwwroot\pics\");
-			else
-			{
-				int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-				dir = dir[0..ix] + @$"CurationFront\public\pics\";
-			}
-
-			string oldFn = Path.Combine(dir, oldPicItem.FileName);
-			newFn = Path.Combine(dir, newFn);
-
-			System.IO.File.Move(oldFn, newFn);
-
-			return Ok(db.SaveItem(picItem));
-		}
-		catch (Exception ex)
-		{
-			return StatusCode(500, $"Internal server error: {ex}");
-		}
+		pfOps.RenameFile(oldPicItem.FileName, newFn);
+		return Ok(db.SaveItem(picItem));
 	}
 
 	// POST api/Pictures/SaveWithImg
@@ -137,18 +117,14 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 			if (file is null || file.Length == 0)
 				return BadRequest("FormData missing");
 
-
-			string dir = Directory.GetCurrentDirectory();
-			if (aps.Polson.IsProduction)
-				dir = Path.Combine(dir, @$"wwwroot\pics\{picItem.FileName}");
-			else
+			byte[] fileBytes;
+			using (var stream = new MemoryStream())
 			{
-				int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-				dir = dir[0..ix] + @$"CurationFront\public\pics\{picItem.FileName}";
+				file.CopyTo(stream);
+				fileBytes = stream.ToArray();
 			}
 
-			using (var stream = new FileStream(dir, FileMode.Create))
-				file.CopyTo(stream);
+			pfOps.SaveFile(picItem.FileName, fileBytes);
 
 			picItem.Ts = (int)DateTime.Now.ToUnixTime();
 			picItem.IsMissing = false;
@@ -161,4 +137,24 @@ public class PicturesController(AppSettings aps, PicturesDb db) : ControllerBase
 		}
 	}
 
+	// POST api/Pictures/RemoveMissing
+	[HttpPost("[action]")]
+	[AdminAuthorize()]
+	public ActionResult<int> RemoveMissing()
+	{
+		return Ok(db.RemoveMissing());
+	}
+
+	// POST api/Pictures/Destroy
+	[HttpPost("[action]")]
+	[AdminAuthorize()]
+	public ActionResult Destroy(PictureItem picItem)
+	{
+		if (!string.IsNullOrWhiteSpace(picItem.FileName) && db.CountByFileName(picItem.FileName) == 1)
+			pfOps.DeleteFile(picItem.FileName);
+
+		db.Destroy(picItem.Id);
+
+		return Ok();
+	}
 }
