@@ -6,21 +6,28 @@ namespace CurationBack.Services;
 public class BaseDb<TItem> where TItem : IDbItem
 {
 	protected List<TItem> db;
+	protected readonly string dbName;
+	protected readonly string dbPath;
 	protected readonly string dbFullPath;
 
 	public BaseDb(AppSettings aps, string dbName)
 	{
 		string dir = Directory.GetCurrentDirectory();
 		//D:\UserData\Documents\AppDev\NextSemiBack\NextSemiBack
+		this.dbName = dbName;
+
 		if (aps.Polson.IsProduction)
-			dbFullPath = Path.Combine(dir, @$"Db\{dbName}.json");
+		{
+			dbPath = Path.Combine(dir, @$"Db\");
+		}
 		else
 		{
 			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
-			dbFullPath = dir[0..ix] + @$"CurationBack\CurationBack\Db\{dbName}.json";
+			dbPath = dir[0..ix] + @$"CurationBack\CurationBack\Db\";
 			// @$"CurationFront\public\docs\{dbName}.json";
 			//D:\UserData\Documents\AppDev\CurationFront\db
 		}
+		dbFullPath = Path.Combine(dbPath, @$"{dbName}.json");
 
 		if (File.Exists(dbFullPath))
 		{
@@ -87,8 +94,51 @@ public class BaseDb<TItem> where TItem : IDbItem
 		SaveFile();
 	}
 
+	// *** File Operations ***
+
 	protected void SaveFile()
 	{
 		File.WriteAllText(FilePath, JsonConvert.SerializeObject(db));
+	}
+
+	public string BackupFile()
+	{
+		string fn = @$"{dbName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.json";
+		File.WriteAllText(Path.Combine(dbPath, fn), JsonConvert.SerializeObject(db));
+		return fn;
+	}
+
+	public void RestoreFile(string fileName)
+	{
+		string fullPath = Path.Combine(dbPath, fileName);
+
+		if (File.Exists(fullPath))
+		{
+			string json = File.ReadAllText(fullPath);
+			db = JsonConvert.DeserializeObject<List<TItem>>(json) ?? [];
+			SaveFile();
+		}
+	}
+
+	public string DownloadFile(string? fileName = null)
+	{
+		if (fileName is null)
+			return JsonConvert.SerializeObject(db);
+
+		string fullPath = Path.Combine(dbPath, fileName);
+
+		if (File.Exists(fullPath))
+			return File.ReadAllText(fullPath);
+
+		return "[]";
+	}
+
+	public List<string> BackupFileList()
+	{
+		string[] files = Directory.GetFiles(dbPath);
+		return files.Where(a => Path.GetFileName(a).StartsWith(dbName + "_") && Path.GetExtension(a).Equals(".json", StringComparison.CurrentCultureIgnoreCase))
+					.Select(a => Path.GetFileName(a))
+					.OrderByDescending(a => a)
+					.ToList();
 	}
 }

@@ -10,9 +10,12 @@ var aps = new AppSettings {
 //var uRuns = new UserRuns(aps);
 //uRuns.RegisterUser();
 
-var picRuns = new PictureRuns(aps);
-picRuns.MakeTimestamps();
+//var picRuns = new PictureRuns(aps);
+//picRuns.MakeTimestamps();
 
+var dbRuns = new DbRuns(aps);
+dbRuns.BackupPicDb();
+dbRuns.GetBackupListPicDb();
 
 Console.WriteLine("Done.");
 Console.ReadKey();
