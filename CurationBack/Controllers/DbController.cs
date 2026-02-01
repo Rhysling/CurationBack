@@ -48,4 +48,53 @@ public class DbController(UsersDb uDb, PicturesDb pDb) : ControllerBase
 		return BadRequest();
 	}
 
+	// POST: api/Db/Restore(string fileName)
+	[HttpPost("[action]")]
+	public IActionResult Restore(string fileName)
+	{
+		if (string.IsNullOrWhiteSpace(fileName))
+			return BadRequest("FileName Missing");
+
+		if (fileName.IndexOf('_') < 1)
+			return BadRequest("Not a Backup");
+
+		if (fileName.StartsWith("UsersDb", StringComparison.CurrentCultureIgnoreCase))
+		{
+			uDb.RestoreFile(fileName);
+			return Ok();
+		}
+
+		if (fileName.StartsWith("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
+		{
+			pDb.RestoreFile(fileName);
+			return Ok();
+		}
+
+		return BadRequest();
+	}
+
+	// POST: api/Db/Delete(string fileName)
+	[HttpPost("[action]")]
+	public IActionResult Delete(string fileName)
+	{
+		if (string.IsNullOrWhiteSpace(fileName))
+			return BadRequest("FileName Missing");
+
+		if (fileName.IndexOf('_') < 1)
+			return BadRequest("Not a Backup");
+
+		if (fileName.StartsWith("UsersDb", StringComparison.CurrentCultureIgnoreCase))
+		{
+			uDb.DeleteFile(fileName);
+			return Ok();
+		}
+
+		if (fileName.StartsWith("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
+		{ 
+			pDb.DeleteFile(fileName);
+			return Ok();
+		}
+
+		return BadRequest();
+	}
 }

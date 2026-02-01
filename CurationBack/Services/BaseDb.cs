@@ -114,10 +114,18 @@ public class BaseDb<TItem> where TItem : IDbItem
 
 		if (File.Exists(fullPath))
 		{
-			string json = File.ReadAllText(fullPath);
-			db = JsonConvert.DeserializeObject<List<TItem>>(json) ?? [];
-			SaveFile();
+			File.Copy(fullPath, dbFullPath, true);
 		}
+	}
+
+	public void DeleteFile(string fileName)
+	{
+		if (
+			!fileName.StartsWith(dbName,StringComparison.CurrentCultureIgnoreCase) ||
+			fileName.IndexOf('_') < 1) return;
+
+		string fullPath = Path.Combine(dbPath, fileName);
+		File.Delete(fullPath);		
 	}
 
 	public string DownloadFile(string? fileName = null)
