@@ -1,5 +1,4 @@
 ﻿using CurationBack.Models;
-using CurationBack.Services;
 using CurationBack.Runner.Runs;
 
 var aps = new AppSettings { 
