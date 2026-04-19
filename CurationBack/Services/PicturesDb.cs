@@ -96,6 +96,9 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 	{
 		var (missing, orphans) = GetAuditLists(fileNames);
 
+		foreach (var a in db)
+			a.IsMissing = false;
+
 		SaveBatch(missing);
 		SaveBatch(orphans);
 	}
