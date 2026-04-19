@@ -41,10 +41,10 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 		return db.GetAll(includeMissing: true, includeDeleted: true);
 	}
 
-	// GET: api/Pictures/GetCleanPics
+	// GET: api/Pictures/GetAuditList
 	[HttpGet("[action]")]
 	[AdminAuthorize()]
-	public List<PictureItem> GetCleanPics()
+	public ActionResult<Object> GetAuditList()
 	{
 		string dir = Directory.GetCurrentDirectory();
 		if (aps.Polson.IsProduction)
@@ -65,8 +65,8 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 			.OrderBy(a => a)
 			.ToList();
 
-		db.SyncFromFileList(fileNames);
-		return db.GetAll(includeMissing: true, includeDeleted: true);
+		var result = db.GetAuditLists(fileNames);
+		return new { Missing = result.missing, Orphans = result.orphans };
 	}
 
 	// POST api/Pictures/Save
@@ -135,6 +135,34 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 		{
 			return StatusCode(500, $"Internal server error: {ex}");
 		}
+	}
+
+	// POST: api/Pictures/CleanPics
+	[HttpPost("[action]")]
+	[AdminAuthorize()]
+	public List<PictureItem> CleanPics()
+	{
+		string dir = Directory.GetCurrentDirectory();
+		if (aps.Polson.IsProduction)
+			dir = Path.Combine(dir, @$"wwwroot\pics");
+		else
+		{
+			int ix = dir.IndexOf(@"CurationBack\CurationBack", StringComparison.CurrentCultureIgnoreCase);
+			dir = dir[0..ix] + @$"CurationFront\public\pics";
+		}
+
+		var fileNames = Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
+			.Where(f => f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+			)
+			.Select(a => new FileInfo(a).Name)
+			.OrderBy(a => a)
+			.ToList();
+
+		db.SyncFromFileList(fileNames);
+		return db.GetAll(includeMissing: true, includeDeleted: true);
 	}
 
 	// POST api/Pictures/RemoveMissing

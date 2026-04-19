@@ -75,7 +75,7 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		SaveFile();
 	}
 
-	public void SyncFromFileList(List<string> fileNames)
+	public (List<PictureItem> missing, List<PictureItem> orphans) GetAuditLists(List<string> fileNames)
 	{
 		var piFromFiles = fileNames.Select(a => new PictureItem { FileName = a });
 
@@ -86,11 +86,17 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 		foreach (var a in missing)
 			a.IsMissing = true;
 
-		SaveBatch(missing);
-
 		foreach (var a in orphans)
 			a.IsMissing = false;
 
+		return (missing, orphans);
+	}
+
+	public void SyncFromFileList(List<string> fileNames)
+	{
+		var (missing, orphans) = GetAuditLists(fileNames);
+
+		SaveBatch(missing);
 		SaveBatch(orphans);
 	}
 
