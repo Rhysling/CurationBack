@@ -10,6 +10,7 @@ namespace CurationBack.Models
 		public required string FullName { get; set; }
 		public string? Token { get; set; }
 		public bool IsAdmin { get; set; }
+		public bool HasPw { get; set; }
 		public bool IsDisabled { get; set; }
 		public bool IsDeleted { get; set; }
 	}

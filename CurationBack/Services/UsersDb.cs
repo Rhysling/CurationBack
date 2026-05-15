@@ -8,9 +8,19 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 
 	public override UserClient? GetById(int id, bool includeDeleted = false) => throw new NotImplementedException();
 
-	public List<UserClientRemote> GetAllRemote(bool includeDeleted = false)
+	public List<UserClientRemote> GetAllRemote(bool includeDeleted = true)
 	{
-		var q = db.Select(a=> (UserClientRemote)a).AsQueryable();
+		var q = db.Select(static a => new UserClientRemote {
+			Id = a.Id,
+			Email = a.Email,
+			FullName = a.FullName,
+			Token = a.Token,
+			IsAdmin = a.IsAdmin,
+			HasPw = !String.IsNullOrWhiteSpace(a.PwHash),
+			IsDisabled = a.IsDisabled,
+			IsDeleted = a.IsDeleted
+		}).AsQueryable();
+
 		if (!includeDeleted)
 			q = q.Where(a => !a.IsDeleted);
 

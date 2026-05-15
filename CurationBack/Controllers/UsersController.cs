@@ -51,7 +51,22 @@ namespace CurationBack.Controllers
 		[HttpPost("[action]")]
 		public IActionResult Save([FromBody] UserClientRemote user)
 		{
+			if (User.FindFirst("UserId")?.Value == user.Id.ToString() && user.IsDisabled)
+				return BadRequest("Cannot disable current user.");
+
 			return Ok(db.SaveItem(user));
+		}
+
+		// POST: api/Users/Destroy
+		[AdminAuthorize]
+		[HttpPost("[action]")]
+		public IActionResult Destroy([FromBody] UserClientRemote user)
+		{
+			if (User.FindFirst("UserId")?.Value == user.Id.ToString())
+				return BadRequest("Cannot destroy current user.");
+
+			db.Destroy(user.Id);
+			return Ok();
 		}
 
 		// POST: api/Users/UpdatePassword
