@@ -44,7 +44,7 @@ public class UsersDb(AppSettings aps) : BaseDb<UserClient>(aps, "UsersDb")
 			IsDeleted = ucr.IsDeleted
 		};
 
-	var ucExisting = FindUcByEmail(ucr.Email);
+		var ucExisting = db.FirstOrDefault(a => a.Id == ucr.Id);
 
 		if (ucExisting is not null)
 			uc.PwHash = ucExisting.PwHash;

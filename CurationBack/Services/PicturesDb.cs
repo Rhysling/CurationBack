@@ -94,10 +94,10 @@ public class PicturesDb(AppSettings aps) : BaseDb<PictureItem>(aps, "PicturesDb"
 
 	public void SyncFromFileList(List<string> fileNames)
 	{
-		var (missing, orphans) = GetAuditLists(fileNames);
-
 		foreach (var a in db)
 			a.IsMissing = false;
+
+		var (missing, orphans) = GetAuditLists(fileNames);
 
 		SaveBatch(missing);
 		SaveBatch(orphans);

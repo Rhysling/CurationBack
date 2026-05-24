@@ -26,7 +26,7 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 		return db.FindBySlug(slug);
 	}
 
-	// GET: api/Pictures/GetBySlug
+	// GET: api/Pictures/GetById
 	[HttpGet("[action]")]
 	public PictureItem GetById(int id)
 	{
@@ -107,7 +107,7 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 	// POST api/Pictures/SaveWithImg
 	[HttpPost("[action]")]
 	[AdminAuthorize()]
-	public ActionResult<PictureItem> SaveWithImg()
+	public async Task<ActionResult<PictureItem>> SaveWithImg()
 	{
 		try
 		{
@@ -117,14 +117,28 @@ public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps
 			if (file is null || file.Length == 0)
 				return BadRequest("FormData missing");
 
+			string fn = picItem.FileName;
+
+			if (string.IsNullOrWhiteSpace(fn))
+				return BadRequest("Filename cannot be empty.");
+
+			if (Regex.IsMatch(fn, @"[^A-Za-z0-9\-_\.]"))
+				return BadRequest("Filename cannot have invalid characters.");
+
+			if (!(fn.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+					|| fn.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+					|| fn.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+					|| fn.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+				) return BadRequest("Filename must have a valid image extension.");
+
 			byte[] fileBytes;
 			using (var stream = new MemoryStream())
 			{
-				file.CopyTo(stream);
+				await file.CopyToAsync(stream);
 				fileBytes = stream.ToArray();
 			}
 
-			pfOps.SaveFile(picItem.FileName, fileBytes);
+			pfOps.SaveFile(fn, fileBytes);
 
 			picItem.Ts = (int)DateTime.Now.ToUnixTime();
 			picItem.IsMissing = false;

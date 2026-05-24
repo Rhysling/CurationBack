@@ -112,20 +112,27 @@ public class BaseDb<TItem> where TItem : IDbItem
 	{
 		string fullPath = Path.Combine(dbPath, fileName);
 
+		if (!IsWithinDbPath(fullPath)) return;
+
 		if (File.Exists(fullPath))
 		{
 			File.Copy(fullPath, dbFullPath, true);
+			string json = File.ReadAllText(dbFullPath);
+			db = JsonConvert.DeserializeObject<List<TItem>>(json) ?? [];
 		}
 	}
 
 	public void DeleteFile(string fileName)
 	{
 		if (
-			!fileName.StartsWith(dbName,StringComparison.CurrentCultureIgnoreCase) ||
+			!fileName.StartsWith(dbName, StringComparison.CurrentCultureIgnoreCase) ||
 			fileName.IndexOf('_') < 1) return;
 
 		string fullPath = Path.Combine(dbPath, fileName);
-		File.Delete(fullPath);		
+
+		if (!IsWithinDbPath(fullPath)) return;
+
+		File.Delete(fullPath);
 	}
 
 	public string DownloadFile(string? fileName = null)
@@ -135,11 +142,16 @@ public class BaseDb<TItem> where TItem : IDbItem
 
 		string fullPath = Path.Combine(dbPath, fileName);
 
+		if (!IsWithinDbPath(fullPath)) return "[]";
+
 		if (File.Exists(fullPath))
 			return File.ReadAllText(fullPath);
 
 		return "[]";
 	}
+
+	private bool IsWithinDbPath(string fullPath) =>
+		Path.GetFullPath(fullPath).StartsWith(Path.GetFullPath(dbPath), StringComparison.OrdinalIgnoreCase);
 
 	public List<string> BackupFileList()
 	{

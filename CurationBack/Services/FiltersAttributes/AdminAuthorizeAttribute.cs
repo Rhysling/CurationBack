@@ -10,9 +10,9 @@ namespace CurationBack.Services.FiltersAttributes
 
 		public void OnAuthorization(AuthorizationFilterContext context)
 		{
-			var isAminFromToken = bool.Parse(context.HttpContext.User.Claims.Where(a => a.Type == "IsAdmin").Select(a => a.Value).FirstOrDefault() ?? "false");
+			var isAdminFromToken = bool.Parse(context.HttpContext.User.Claims.Where(a => a.Type == "IsAdmin").Select(a => a.Value).FirstOrDefault() ?? "false");
 
-			if (!isAminFromToken)
+			if (!isAdminFromToken)
 				context.Result = new UnauthorizedResult();
 
 			return;
