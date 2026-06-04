@@ -7,16 +7,15 @@ namespace CurationBack.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [AdminAuthorize]
-public class DbController(UsersSqliteDb uDb, PicturesSqliteDb pDb) : ControllerBase
+public class DbController(PicturesSqliteDb pDb) : ControllerBase
 {
-	private readonly UsersSqliteDb uDb = uDb;
 	private readonly PicturesSqliteDb pDb = pDb;
 
-	// GET: api/Db/GetBackupList(dbName)
+	// GET: api/Db/GetBackupList
 	[HttpGet("[action]")]
 	public IActionResult GetBackupList()
 	{
-		return Ok(uDb.BackupFileList());
+		return Ok(pDb.BackupFileList());
 	}
 
 	// GET: api/Db/GetFile(fileName)
@@ -63,7 +62,7 @@ public class DbController(UsersSqliteDb uDb, PicturesSqliteDb pDb) : ControllerB
 		if (string.IsNullOrWhiteSpace(fileName))
 			return BadRequest("FileName Missing");
 
-		if (fileName.IndexOf('_') < 1)
+		if (fileName.IndexOf("curation_") < 0)
 			return BadRequest("Not a Backup");
 
 		pDb.DeleteFile(fileName);
