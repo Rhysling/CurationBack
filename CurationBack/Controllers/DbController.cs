@@ -7,22 +7,16 @@ namespace CurationBack.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [AdminAuthorize]
-public class DbController(UsersDb uDb, PicturesDb pDb) : ControllerBase
+public class DbController(UsersSqliteDb uDb, PicturesSqliteDb pDb) : ControllerBase
 {
-	private readonly UsersDb uDb = uDb;
-	private readonly PicturesDb pDb = pDb;
+	private readonly UsersSqliteDb uDb = uDb;
+	private readonly PicturesSqliteDb pDb = pDb;
 
 	// GET: api/Db/GetBackupList(dbName)
 	[HttpGet("[action]")]
-	public IActionResult GetBackupList(string dbName)
+	public IActionResult GetBackupList()
 	{
-		if (dbName.Equals("UsersDb", StringComparison.CurrentCultureIgnoreCase))
-			return Ok(uDb.BackupFileList());
-
-		if (dbName.Equals("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
-			return Ok(pDb.BackupFileList());
-		
-		return BadRequest();
+		return Ok(uDb.BackupFileList());
 	}
 
 	// GET: api/Db/GetFile(fileName)
@@ -32,20 +26,17 @@ public class DbController(UsersDb uDb, PicturesDb pDb) : ControllerBase
 		if (string.IsNullOrWhiteSpace(fileName))
 			return BadRequest();
 
-		return Ok(pDb.DownloadFile(fileName));
+		var fo = pDb.DownloadFile(fileName);
+		if (fo is null) return BadRequest();
+
+		return File(fo.FileBytes, fo.ContentType, fo.FileName);
 	}
 
-	// POST: api/Db/Backup(string dbName)
+	// POST: api/Db/Backup()
 	[HttpPost("[action]")]
-	public IActionResult Backup(string dbName)
+	public IActionResult Backup()
 	{
-		if (dbName.Equals("UsersDb", StringComparison.CurrentCultureIgnoreCase))
-			return Ok(uDb.BackupFile());
-
-		if (dbName.Equals("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
-			return Ok(pDb.BackupFile());
-
-		return BadRequest();
+		return Ok(pDb.BackupFile());
 	}
 
 	// POST: api/Db/Restore(string fileName)
@@ -55,22 +46,14 @@ public class DbController(UsersDb uDb, PicturesDb pDb) : ControllerBase
 		if (string.IsNullOrWhiteSpace(fileName))
 			return BadRequest("FileName Missing");
 
-		if (fileName.IndexOf('_') < 1)
+		if (fileName.IndexOf("curation_") < 0)
 			return BadRequest("Not a Backup");
 
-		if (fileName.StartsWith("UsersDb", StringComparison.CurrentCultureIgnoreCase))
-		{
-			uDb.RestoreFile(fileName);
-			return Ok();
-		}
+		bool res = pDb.RestoreFile(fileName);
 
-		if (fileName.StartsWith("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
-		{
-			pDb.RestoreFile(fileName);
-			return Ok();
-		}
+		if (!res) return BadRequest("File not Found");
 
-		return BadRequest();
+		return Ok();
 	}
 
 	// POST: api/Db/Delete(string fileName)
@@ -83,18 +66,7 @@ public class DbController(UsersDb uDb, PicturesDb pDb) : ControllerBase
 		if (fileName.IndexOf('_') < 1)
 			return BadRequest("Not a Backup");
 
-		if (fileName.StartsWith("UsersDb", StringComparison.CurrentCultureIgnoreCase))
-		{
-			uDb.DeleteFile(fileName);
-			return Ok();
-		}
-
-		if (fileName.StartsWith("PicturesDb", StringComparison.CurrentCultureIgnoreCase))
-		{ 
-			pDb.DeleteFile(fileName);
-			return Ok();
-		}
-
-		return BadRequest();
+		pDb.DeleteFile(fileName);
+		return Ok();
 	}
 }

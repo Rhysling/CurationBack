@@ -5,7 +5,7 @@ namespace CurationBack.Runner.Runs;
 
 public class PictureRuns(AppSettings aps)
 {
-	private readonly PicturesDb _pdb = new(aps);
+	private readonly PicturesSqliteDb _pdb = new(aps);
 
 	public void LoadPicturesFromDir()
 	{
@@ -68,5 +68,12 @@ public class PictureRuns(AppSettings aps)
 		}
 
 		_pdb.SaveBatch([..pics]);
+	}
+
+	public void ListAll()
+	{
+		var pics = _pdb.GetAll(includeMissing:false, includeDeleted:true).OrderBy(a => a.Seq);
+		foreach (var p in pics)
+			Console.WriteLine($"{p.Id}-{p.Seq}--{p.FileName}");
 	}
 }

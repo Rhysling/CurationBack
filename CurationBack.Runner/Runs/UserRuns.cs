@@ -5,7 +5,7 @@ namespace CurationBack.Runner.Runs
 {
 	public class UserRuns(AppSettings aps)
 	{
-		private readonly UsersDb _udb = new(aps);
+		private readonly UsersSqliteDb _udb = new(aps);
 
 
 		public void RegisterUser()

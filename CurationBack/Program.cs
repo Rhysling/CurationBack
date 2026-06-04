@@ -16,8 +16,8 @@ if (aps != null)
 	builder.Services.AddSingleton(aps);
 }
 
-builder.Services.AddSingleton<PicturesDb>();
-builder.Services.AddSingleton<UsersDb>();
+builder.Services.AddSingleton<PicturesSqliteDb>();
+builder.Services.AddSingleton<UsersSqliteDb>();
 builder.Services.AddSingleton<PicFileOps>();
 
 builder.Services.AddAuthorization();

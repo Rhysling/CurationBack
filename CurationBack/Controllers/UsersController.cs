@@ -14,10 +14,10 @@ namespace CurationBack.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	public partial class UsersController(AppSettings aps, UsersDb db) : ControllerBase
+	public partial class UsersController(AppSettings aps, UsersSqliteDb db) : ControllerBase
 	{
 		private readonly AppSettings aps = aps;
-		private readonly UsersDb db = db;
+		private readonly UsersSqliteDb db = db;
 
 
 		// POST: api/Users/Login

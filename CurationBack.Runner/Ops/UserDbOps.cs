@@ -4,7 +4,7 @@ using CurationBack.Services;
 
 namespace CurationBack.Runner.Ops;
 
-public class UserDbOps(AppSettings aps, UsersDb udb)
+public class UserDbOps(AppSettings aps, UsersSqliteDb udb)
 {
 	public string RegisterUser(UserRegister ur)
 	{

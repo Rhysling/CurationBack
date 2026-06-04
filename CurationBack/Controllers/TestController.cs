@@ -9,9 +9,9 @@ namespace CurationBack.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class TestController(PicturesDb tDb) : ControllerBase
+public class TestController(PicturesSqliteDb tDb) : ControllerBase
 {
-	private readonly PicturesDb tDb = tDb;
+	private readonly PicturesSqliteDb tDb = tDb;
 
 	[HttpGet("[action]")]
 	public string GetUnsecuredValue()

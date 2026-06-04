@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 
 namespace CurationBack.Services;
 
-public class UsersSqliteDb(AppSettings aps) : BaseSqliteDb(aps)
+public class UsersSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Users")
 {
 	public List<UserClientRemote> GetAllRemote(bool includeDeleted = true)
 	{
@@ -35,13 +35,6 @@ public class UsersSqliteDb(AppSettings aps) : BaseSqliteDb(aps)
 	{
 		using var conn = Open();
 
-		if (ucr.Id == 0)
-		{
-			var maxCmd = conn.CreateCommand();
-			maxCmd.CommandText = "SELECT COALESCE(MAX(Id), 0) FROM Users";
-			ucr.Id = Convert.ToInt32(maxCmd.ExecuteScalar()) + 1;
-		}
-
 		string pwHash = "";
 		var existCmd = conn.CreateCommand();
 		existCmd.CommandText = "SELECT PwHash FROM Users WHERE Id = $id";
@@ -64,7 +57,7 @@ public class UsersSqliteDb(AppSettings aps) : BaseSqliteDb(aps)
 				IsDisabled = excluded.IsDisabled,
 				IsDeleted  = excluded.IsDeleted
 			""";
-		cmd.Parameters.AddWithValue("$id", ucr.Id);
+		cmd.Parameters.AddWithValue("$id", ucr.Id == 0 ? DBNull.Value : ucr.Id);
 		cmd.Parameters.AddWithValue("$email", ucr.Email);
 		cmd.Parameters.AddWithValue("$name", ucr.FullName);
 		cmd.Parameters.AddWithValue("$pw", pwHash);
@@ -77,25 +70,6 @@ public class UsersSqliteDb(AppSettings aps) : BaseSqliteDb(aps)
 
 		ucr.HasPw = !string.IsNullOrWhiteSpace(pwHash);
 		return ucr;
-	}
-
-	public void SetDeleted(int id, bool isDeleted)
-	{
-		using var conn = Open();
-		var cmd = conn.CreateCommand();
-		cmd.CommandText = "UPDATE Users SET IsDeleted = $d WHERE Id = $id";
-		cmd.Parameters.AddWithValue("$d", isDeleted ? 1 : 0);
-		cmd.Parameters.AddWithValue("$id", id);
-		cmd.ExecuteNonQuery();
-	}
-
-	public void Destroy(int id)
-	{
-		using var conn = Open();
-		var cmd = conn.CreateCommand();
-		cmd.CommandText = "DELETE FROM Users WHERE Id = $id";
-		cmd.Parameters.AddWithValue("$id", id);
-		cmd.ExecuteNonQuery();
 	}
 
 	public void SavePassword(string email, string pw)

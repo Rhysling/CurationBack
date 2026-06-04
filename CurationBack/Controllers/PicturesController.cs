@@ -10,7 +10,7 @@ namespace CurationBack.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class PicturesController(AppSettings aps, PicturesDb db, PicFileOps pfOps) : ControllerBase
+public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps pfOps) : ControllerBase
 {
 	// GET: api/Pictures/GetPublicList
 	[HttpGet("[action]")]

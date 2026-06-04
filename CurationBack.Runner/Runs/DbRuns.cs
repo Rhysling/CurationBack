@@ -5,18 +5,18 @@ namespace CurationBack.Runner.Runs;
 
 public class DbRuns(AppSettings aps)
 {
-	private readonly PicturesDb pdb = new(aps);
+	private readonly PicturesSqliteDb pdb = new(aps);
 
-	public void BackupPicDb()
-	{
-		string fn = pdb.BackupFile();
-		Console.WriteLine(fn);
-	}
+	//public void BackupPicDb()
+	//{
+	//	string fn = pdb.BackupFile();
+	//	Console.WriteLine(fn);
+	//}
 
-	public void GetBackupListPicDb()
-	{
-		var list = pdb.BackupFileList();
-		foreach(var fn in list)
-			Console.WriteLine(fn);
-	}
+	//public void GetBackupListPicDb()
+	//{
+	//	var list = pdb.BackupFileList();
+	//	foreach(var fn in list)
+	//		Console.WriteLine(fn);
+	//}
 }
