@@ -49,7 +49,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 	public PictureItem SaveItem(PictureItem item)
 	{
 		using var conn = Open();
-		int id = (int)Upsert(conn, item);
+		int id = Upsert(conn, item);
 		item.Id = id;
 		conn.Close();
 		return item;
@@ -62,7 +62,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 
 		foreach (var item in items)
 		{
-			int id = (int)Upsert(conn, item);
+			int id = Upsert(conn, item);
 			item.Id = id;
 			result.Add(item);
 		}
@@ -113,13 +113,10 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 	public int RemoveMissing()
 	{
 		using var conn = Open();
-		var countCmd = conn.CreateCommand();
-		countCmd.CommandText = "SELECT COUNT(*) FROM Pictures WHERE IsMissing = 1";
-		int mc = Convert.ToInt32(countCmd.ExecuteScalar());
-
-		var delCmd = conn.CreateCommand();
-		delCmd.CommandText = "DELETE FROM Pictures WHERE IsMissing = 1";
-		delCmd.ExecuteNonQuery();
+		var cmd = conn.CreateCommand();
+		cmd.CommandText = "DELETE FROM Pictures WHERE IsMissing = 1; SELECT changes();";
+		int mc = Convert.ToInt32(cmd.ExecuteScalar());
+		conn.Close();
 
 		return mc;
 	}
@@ -140,7 +137,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 	}
 
 	// **** Private ****
-	private long Upsert(SqliteConnection conn, PictureItem item)
+	private int Upsert(SqliteConnection conn, PictureItem item)
 	{
 		string txt;
 		bool isNew = (item.Id == 0);
@@ -182,7 +179,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 		cmd.Parameters.AddWithValue("$link", item.Link ?? (object)DBNull.Value);
 		cmd.Parameters.AddWithValue("$miss", item.IsMissing ? 1 : 0);
 		cmd.Parameters.AddWithValue("$del", item.IsDeleted ? 1 : 0);
-		return (long)(cmd.ExecuteScalar() ?? 0);
+		return Convert.ToInt32((cmd.ExecuteScalar() ?? 0));
 	}
 
 	private static List<PictureItem> ReadAll(SqliteCommand cmd)
