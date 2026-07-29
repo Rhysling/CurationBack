@@ -179,6 +179,14 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 		return db.GetAll(includeMissing: true, includeDeleted: true);
 	}
 
+	// POST: api/Pictures/ResequencePics
+	[HttpPost("[action]")]
+	[AdminAuthorize()]
+	public List<PictureItem> ResequencePics()
+	{
+		return db.ReSequence();
+	}
+
 	// POST api/Pictures/RemoveMissing
 	[HttpPost("[action]")]
 	[AdminAuthorize()]
