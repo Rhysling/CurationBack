@@ -31,8 +31,10 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 
 		string baseUrl = $"{Request.Scheme}://{Request.Host}";
 
-		XNamespace media = "http://search.yahoo.com/mrss/";
-		XNamespace content = "http://purl.org/rss/1.0/modules/content/";
+		//XNamespace media = "http://search.yahoo.com/mrss/";
+		//XNamespace content = "http://purl.org/rss/1.0/modules/content/";
+		XNamespace atom = "http://www.w3.org/2005/Atom/";
+		//XNamespace dc = "http://purl.org/dc/elements/1.1/";
 
 		var channel = new XElement("channel",
 			new XElement("title", "Polson Pictures"),
@@ -45,7 +47,7 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 		foreach (var pic in items)
 		{
 			string slug = Path.GetFileNameWithoutExtension(pic.FileName);
-			string pageUrl = $"{baseUrl}/picture?p={Uri.EscapeDataString(slug)}";
+			string pageUrl = $"{baseUrl}/curation?p={slug}";
 			string imgUrl = $"{baseUrl}/pics/{Uri.EscapeDataString(pic.FileName)}";
 			string title = string.IsNullOrWhiteSpace(pic.Description) ? slug : pic.Description;
 			string summary = string.IsNullOrWhiteSpace(pic.Description) ? pic.FileName : pic.Description;
@@ -56,27 +58,16 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 			string encodedAlt = System.Net.WebUtility.HtmlEncode(title);
 
 			//string htmlBody = $"<p>{System.Net.WebUtility.HtmlEncode(summary)}</p><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
-			string htmlBody = $"<img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
+			string htmlBody = $"<a href=\"{pageUrl}\" target=\"_blank\"><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" /></a>";
+			if (!string.IsNullOrWhiteSpace(pic.Description))
+				htmlBody += $"<p>{pic.Description}</p>";
 
 			var item = new XElement("item",
 				new XElement("title", title),
 				new XElement("link", pageUrl),
 				new XElement("guid", new XAttribute("isPermaLink", "true"), pageUrl),
 				new XElement("pubDate", pubDate),
-				new XElement("description", new XCData(htmlBody)),
-				new XElement(content + "encoded", new XCData(htmlBody)),
-				new XElement("enclosure",
-					new XAttribute("url", imgUrl),
-					new XAttribute("type", mimeType),
-					new XAttribute("length", fileSize)
-				),
-				new XElement(media + "content",
-					new XAttribute("url", imgUrl),
-					new XAttribute("type", mimeType),
-					new XAttribute("medium", "image"),
-					new XAttribute("fileSize", fileSize)
-				),
-				new XElement(media + "thumbnail", new XAttribute("url", imgUrl))
+				new XElement("description", new XCData(htmlBody))
 			);
 
 			foreach (var kw in pic.Keywords)
@@ -89,8 +80,8 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 			new XDeclaration("1.0", "utf-8", null),
 			new XElement("rss",
 				new XAttribute("version", "2.0"),
-				new XAttribute(XNamespace.Xmlns + "media", media),
-				new XAttribute(XNamespace.Xmlns + "content", content),
+				new XAttribute(XNamespace.Xmlns + "media", atom),
+				//new XAttribute(XNamespace.Xmlns + "content", content),
 				channel
 			)
 		);
