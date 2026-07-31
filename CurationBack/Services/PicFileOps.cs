@@ -41,4 +41,10 @@ public class PicFileOps
 	{
 		File.Delete(Path.Combine(basePath, fileName));
 	}
+
+	public long GetFileSize(string fileName)
+	{
+		string fullPath = Path.Combine(basePath, fileName);
+		return File.Exists(fullPath) ? new FileInfo(fullPath).Length : 0;
+	}
 }

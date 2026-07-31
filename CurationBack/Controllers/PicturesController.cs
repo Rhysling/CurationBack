@@ -4,7 +4,9 @@ using CurationBack.Services.FiltersAttributes;
 using CurationBack.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace CurationBack.Controllers;
 
@@ -17,6 +19,83 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 	public List<PictureItem> GetPublicList()
 	{
 		return db.GetAll(includeMissing: false, includeDeleted: false);
+	}
+
+	// GET: api/Pictures/Rss
+	[HttpGet("[action]")]
+	public ContentResult Rss()
+	{
+		var items = db.GetAll(includeMissing: false, includeDeleted: false)
+			.OrderByDescending(p => p.Ts)
+			.ToList();
+
+		string baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+		XNamespace media = "http://search.yahoo.com/mrss/";
+		XNamespace content = "http://purl.org/rss/1.0/modules/content/";
+
+		var channel = new XElement("channel",
+			new XElement("title", "Polson Pictures"),
+			new XElement("link", baseUrl),
+			new XElement("description", "Latest pictures from the Polson curated collection."),
+			new XElement("language", "en-us"),
+			new XElement("lastBuildDate", DateTime.UtcNow.ToString("R"))
+		);
+
+		foreach (var pic in items)
+		{
+			string slug = Path.GetFileNameWithoutExtension(pic.FileName);
+			string pageUrl = $"{baseUrl}/picture?p={Uri.EscapeDataString(slug)}";
+			string imgUrl = $"{baseUrl}/pics/{Uri.EscapeDataString(pic.FileName)}";
+			string title = string.IsNullOrWhiteSpace(pic.Description) ? slug : pic.Description;
+			string summary = string.IsNullOrWhiteSpace(pic.Description) ? pic.FileName : pic.Description;
+			string pubDate = DateTimeOffset.FromUnixTimeSeconds(pic.Ts).UtcDateTime.ToString("R");
+			string mimeType = GetImageMimeType(pic.FileName);
+			long fileSize = pfOps.GetFileSize(pic.FileName);
+
+			string encodedAlt = System.Net.WebUtility.HtmlEncode(title);
+
+			//string htmlBody = $"<p>{System.Net.WebUtility.HtmlEncode(summary)}</p><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
+			string htmlBody = $"<img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
+
+			var item = new XElement("item",
+				new XElement("title", title),
+				new XElement("link", pageUrl),
+				new XElement("guid", new XAttribute("isPermaLink", "true"), pageUrl),
+				new XElement("pubDate", pubDate),
+				new XElement("description", new XCData(htmlBody)),
+				new XElement(content + "encoded", new XCData(htmlBody)),
+				new XElement("enclosure",
+					new XAttribute("url", imgUrl),
+					new XAttribute("type", mimeType),
+					new XAttribute("length", fileSize)
+				),
+				new XElement(media + "content",
+					new XAttribute("url", imgUrl),
+					new XAttribute("type", mimeType),
+					new XAttribute("medium", "image"),
+					new XAttribute("fileSize", fileSize)
+				),
+				new XElement(media + "thumbnail", new XAttribute("url", imgUrl))
+			);
+
+			foreach (var kw in pic.Keywords)
+				item.Add(new XElement("category", kw));
+
+			channel.Add(item);
+		}
+
+		var doc = new XDocument(
+			new XDeclaration("1.0", "utf-8", null),
+			new XElement("rss",
+				new XAttribute("version", "2.0"),
+				new XAttribute(XNamespace.Xmlns + "media", media),
+				new XAttribute(XNamespace.Xmlns + "content", content),
+				channel
+			)
+		);
+
+		return Content(doc.Declaration + Environment.NewLine + doc.ToString(SaveOptions.DisableFormatting), "application/rss+xml", Encoding.UTF8);
 	}
 
 	// GET: api/Pictures/GetBySlug
@@ -206,5 +285,19 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 		db.Destroy(picItem.Id);
 
 		return Ok();
+	}
+
+	// **** Private ****
+
+	private static string GetImageMimeType(string fileName)
+	{
+		string ext = Path.GetExtension(fileName).ToLowerInvariant();
+		return ext switch
+		{
+			".jpg" or ".jpeg" => "image/jpeg",
+			".png" => "image/png",
+			".gif" => "image/gif",
+			_ => "application/octet-stream",
+		};
 	}
 }
