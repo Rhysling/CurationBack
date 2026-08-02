@@ -63,7 +63,7 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 				htmlBody += $"<p>{pic.Description}</p>";
 
 			var item = new XElement("item",
-				new XElement("title", title),
+				new XElement("title", System.Net.WebUtility.HtmlEncode(title)),
 				new XElement("link", pageUrl),
 				new XElement("guid", new XAttribute("isPermaLink", "true"), pageUrl),
 				new XElement("pubDate", pubDate),
