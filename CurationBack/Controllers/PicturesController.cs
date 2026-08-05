@@ -59,8 +59,12 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 
 			//string htmlBody = $"<p>{System.Net.WebUtility.HtmlEncode(summary)}</p><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
 			string htmlBody = $"<a href=\"{pageUrl}\" target=\"_blank\"><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" /></a>";
+			
 			if (!string.IsNullOrWhiteSpace(pic.Description))
 				htmlBody += $"<p>{pic.Description}</p>";
+
+			if (!string.IsNullOrWhiteSpace(pic.Link))
+				htmlBody += $"<p><a href=\"{pic.Link}\" target=\"_blank\">The source...</a></p>";
 
 			var item = new XElement("item",
 				new XElement("title", System.Net.WebUtility.HtmlEncode(title)),
