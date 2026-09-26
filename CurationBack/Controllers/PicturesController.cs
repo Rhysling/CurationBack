@@ -25,10 +25,7 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 	[HttpGet("[action]")]
 	public ContentResult Rss()
 	{
-		var items = db.GetAll(includeMissing: false, includeDeleted: false)
-			.OrderByDescending(p => p.Ts)
-			.ToList();
-
+		var items = db.GetAllForRss();
 		string baseUrl = $"{Request.Scheme}://{Request.Host}";
 
 		//XNamespace media = "http://search.yahoo.com/mrss/";

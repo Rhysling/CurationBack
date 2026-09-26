@@ -19,6 +19,14 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 		return ReadAll(cmd);
 	}
 
+	public List<PictureItem> GetAllForRss()
+	{
+		using var conn = Open();
+		var cmd = conn.CreateCommand();		
+		cmd.CommandText = "SELECT * FROM Pictures WHERE (IsDeleted = 0) AND (IsRss = 1) ORDER BY Ts DESC LIMIT 100;";
+		return ReadAll(cmd);
+	}
+
 	public PictureItem? GetById(int id, bool includeDeleted = false)
 	{
 		using var conn = Open();
@@ -144,8 +152,8 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 
 		if (isNew)
 			txt = """
-				INSERT INTO Pictures (FileName, Seq, Ts, Keywords, Description, Link, IsMissing, IsDeleted)
-				VALUES ($fn, $seq, $ts, $kw, $desc, $link, $miss, $del)
+				INSERT INTO Pictures (FileName, Seq, Ts, Keywords, Description, Link, IsMissing, IsDeleted, IsRss)
+				VALUES ($fn, $seq, $ts, $kw, $desc, $link, $miss, $del, $isrss)
 				RETURNING id;
 				""";
 		else
@@ -159,7 +167,8 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 					Description = $desc,
 					Link        = $link,
 					IsMissing   = $miss,
-					IsDeleted   = $del
+					IsDeleted   = $del,
+					IsRss       = $isrss
 				WHERE
 					(Id = $id)
 				RETURNING id;
@@ -179,6 +188,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 		cmd.Parameters.AddWithValue("$link", item.Link ?? (object)DBNull.Value);
 		cmd.Parameters.AddWithValue("$miss", item.IsMissing ? 1 : 0);
 		cmd.Parameters.AddWithValue("$del", item.IsDeleted ? 1 : 0);
+		cmd.Parameters.AddWithValue("$isrss", item.IsRss ? 1 : 0);
 		return Convert.ToInt32((cmd.ExecuteScalar() ?? 0));
 	}
 
@@ -199,6 +209,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 				Link        = r.IsDBNull(r.GetOrdinal("Link")) ? null : r.GetString(r.GetOrdinal("Link")),
 				IsMissing   = r.GetInt32(r.GetOrdinal("IsMissing")) == 1,
 				IsDeleted   = r.GetInt32(r.GetOrdinal("IsDeleted")) == 1,
+				IsRss       = r.GetInt32(r.GetOrdinal("IsRss")) == 1,
 			});
 		}
 		return result;

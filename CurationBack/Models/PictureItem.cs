@@ -14,4 +14,5 @@ public class PictureItem : IDbItem
 	public string? Link { get; set; }
 	public bool IsMissing { get; set; }
 	public bool IsDeleted { get; set; }
+	public bool IsRss { get; set; }
 }
