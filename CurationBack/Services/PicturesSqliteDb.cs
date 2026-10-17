@@ -23,7 +23,7 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 	{
 		using var conn = Open();
 		var cmd = conn.CreateCommand();		
-		cmd.CommandText = "SELECT * FROM Pictures WHERE (IsDeleted = 0) AND (IsRss = 1) ORDER BY Ts DESC LIMIT 100;";
+		cmd.CommandText = "SELECT * FROM Pictures WHERE (IsDeleted = 0) AND (IsRss = 1) ORDER BY Ts DESC LIMIT 50;";
 		return ReadAll(cmd);
 	}
 
@@ -152,8 +152,8 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 
 		if (isNew)
 			txt = """
-				INSERT INTO Pictures (FileName, Seq, Ts, Keywords, Description, Link, IsMissing, IsDeleted, IsRss)
-				VALUES ($fn, $seq, $ts, $kw, $desc, $link, $miss, $del, $isrss)
+				INSERT INTO Pictures (FileName, Seq, Ts, Title, Description, Keywords, Link, IsMissing, IsDeleted, IsRss)
+				VALUES ($fn, $seq, $ts, $title, $desc, $kw, $link, $miss, $del, $isrss)
 				RETURNING id;
 				""";
 		else
@@ -163,8 +163,9 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 					FileName    = $fn,
 					Seq         = $seq,
 					Ts          = $ts,
-					Keywords    = $kw,
+					Title       = $title,
 					Description = $desc,
+					Keywords    = $kw,
 					Link        = $link,
 					IsMissing   = $miss,
 					IsDeleted   = $del,
@@ -183,8 +184,9 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 		cmd.Parameters.AddWithValue("$fn", item.FileName);
 		cmd.Parameters.AddWithValue("$seq", item.Seq);
 		cmd.Parameters.AddWithValue("$ts", item.Ts);
-		cmd.Parameters.AddWithValue("$kw", JsonConvert.SerializeObject(item.Keywords));
+		cmd.Parameters.AddWithValue("$title", item.Title ?? (object)DBNull.Value);
 		cmd.Parameters.AddWithValue("$desc", item.Description ?? (object)DBNull.Value);
+		cmd.Parameters.AddWithValue("$kw", JsonConvert.SerializeObject(item.Keywords));
 		cmd.Parameters.AddWithValue("$link", item.Link ?? (object)DBNull.Value);
 		cmd.Parameters.AddWithValue("$miss", item.IsMissing ? 1 : 0);
 		cmd.Parameters.AddWithValue("$del", item.IsDeleted ? 1 : 0);
@@ -204,8 +206,9 @@ public class PicturesSqliteDb(AppSettings aps) : BaseSqliteDb(aps, "Pictures")
 				FileName    = r.GetString(r.GetOrdinal("FileName")),
 				Seq         = r.GetInt32(r.GetOrdinal("Seq")),
 				Ts          = r.GetInt32(r.GetOrdinal("Ts")),
-				Keywords    = JsonConvert.DeserializeObject<List<string>>(r.GetString(r.GetOrdinal("Keywords"))) ?? [],
+				Title       = r.IsDBNull(r.GetOrdinal("Title")) ? null : r.GetString(r.GetOrdinal("Title")),
 				Description = r.IsDBNull(r.GetOrdinal("Description")) ? null : r.GetString(r.GetOrdinal("Description")),
+				Keywords    = JsonConvert.DeserializeObject<List<string>>(r.GetString(r.GetOrdinal("Keywords"))) ?? [],
 				Link        = r.IsDBNull(r.GetOrdinal("Link")) ? null : r.GetString(r.GetOrdinal("Link")),
 				IsMissing   = r.GetInt32(r.GetOrdinal("IsMissing")) == 1,
 				IsDeleted   = r.GetInt32(r.GetOrdinal("IsDeleted")) == 1,

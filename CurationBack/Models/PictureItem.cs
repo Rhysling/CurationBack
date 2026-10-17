@@ -9,8 +9,9 @@ public class PictureItem : IDbItem
 	public string FileName { get; set; } = "";
 	public int Seq { get; set; }
 	public int Ts { get; set; }
-	public List<string> Keywords { get; set; } = [];
+	public string? Title { get; set; }
 	public string? Description { get; set; }
+	public List<string> Keywords { get; set; } = [];
 	public string? Link { get; set; }
 	public bool IsMissing { get; set; }
 	public bool IsDeleted { get; set; }

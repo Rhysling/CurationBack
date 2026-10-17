@@ -46,8 +46,11 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 			string slug = Path.GetFileNameWithoutExtension(pic.FileName);
 			string pageUrl = $"{baseUrl}/curation?p={slug}";
 			string imgUrl = $"{baseUrl}/pics/{Uri.EscapeDataString(pic.FileName)}";
-			string title = string.IsNullOrWhiteSpace(pic.Description) ? slug : pic.Description;
-			string summary = string.IsNullOrWhiteSpace(pic.Description) ? pic.FileName : pic.Description;
+			string title = string.IsNullOrWhiteSpace(pic.Title) ? slug : pic.Title;
+
+			string? summary = !string.IsNullOrWhiteSpace(pic.Description) && pic.Description != title
+				? pic.Description : null;
+
 			string pubDate = DateTimeOffset.FromUnixTimeSeconds(pic.Ts).UtcDateTime.ToString("R");
 			string mimeType = GetImageMimeType(pic.FileName);
 			long fileSize = pfOps.GetFileSize(pic.FileName);
@@ -57,8 +60,8 @@ public class PicturesController(AppSettings aps, PicturesSqliteDb db, PicFileOps
 			//string htmlBody = $"<p>{System.Net.WebUtility.HtmlEncode(summary)}</p><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" />";
 			string htmlBody = $"<a href=\"{pageUrl}\" target=\"_blank\"><img src=\"{imgUrl}\" alt=\"{encodedAlt}\" /></a>";
 			
-			if (!string.IsNullOrWhiteSpace(pic.Description))
-				htmlBody += $"<p>{pic.Description}</p>";
+			if (summary is not null)
+				htmlBody += $"<p>{summary}</p>";
 
 			if (!string.IsNullOrWhiteSpace(pic.Link))
 				htmlBody += $"<p><a href=\"{pic.Link}\" target=\"_blank\">The source...</a></p>";
