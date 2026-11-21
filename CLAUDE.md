@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 dotnet build
 
-# Run the API
+# Run the API (http://localhost:5116, https://localhost:7212)
 dotnet run --project CurationBack/CurationBack.csproj
 
 # Run the Runner utility
@@ -16,45 +16,69 @@ dotnet run --project CurationBack.Runner/CurationBack.Runner.csproj
 
 # Publish (Release)
 dotnet publish -c Release
+
+# Inspect the dev database
+sqlite3 CurationBack/Db/curation.db .schema
 ```
 
-There is no test project. `TestController` provides manual endpoint verification, and `CurationBack.Runner` provides operational utilities.
+There is no test project. `TestController` and `CurationBack/CurationBack.http` provide manual endpoint verification; `CurationBack.Runner` provides operational utilities.
 
 ## Architecture
 
-**CurationBack** is an ASP.NET Core 10.0 Web API for managing a curated picture collection with JWT authentication. It is one of two projects in the solution; `CurationBack.Runner` is a console utility app for batch/admin operations.
+**CurationBack** is an ASP.NET Core 10.0 Web API for managing a curated picture collection with JWT authentication. It also serves the built CurationFront SPA from `wwwroot` in production (non-`/api`, extensionless paths are rewritten to `/index.html` in `Program.cs`). `CurationBack.Runner` is a console app that references the API project and instantiates its services directly.
 
-### Data Persistence
+### Data Persistence (SQLite)
 
-There is no database. All data is stored as JSON files in `CurationBack/Db/`:
-- `PicturesDb.json` — array of `PictureItem` objects
-- `UsersDb.json` — array of `UserClient` objects (BCrypt-hashed passwords)
+All data lives in a single SQLite file, `CurationBack/Db/curation.db`, accessed with raw ADO.NET via `Microsoft.Data.Sqlite` (no ORM, no migrations).
 
-`BaseDb<T>` (`Services/BaseDb.cs`) is the generic base class for all persistence. It handles: JSON serialization via Newtonsoft.Json, incremental ID generation, soft-delete via `IsDeleted` flag, and timestamped backup/restore. Both `PicturesDb` and `UsersDb` extend it.
+- `BaseSqliteDb` (`Services/BaseSqliteDb.cs`) — resolves the DB path, opens a new connection per call, provides `SetDeleted`/`Destroy` by Id, and backup/restore/download file operations.
+- `PicturesSqliteDb` — `Pictures` table. `Keywords` is stored as a JSON string (Newtonsoft.Json). Also handles audit, sync-with-filesystem, resequence, and the RSS query.
+- `UsersSqliteDb` — `Users` table. Passwords hashed with `BCrypt.EnhancedHashPassword` (work factor 13). `SaveItem` upserts but always preserves the existing `PwHash`; passwords change only via `SavePassword`.
+- Both are registered as singletons in `Program.cs`.
 
-### File Path Resolution
+**The schema is not created by code.** `curation.db` must already contain `Pictures` and `Users` tables (see README for the schema). The `Db/` folder is gitignored, so the DB and its backups are never committed. Booleans are stored as `INTEGER` 0/1.
 
-Picture files live at different paths depending on environment:
-- **Development**: `../CurationFront/public/pics` (sibling repo folder)
-- **Production**: `wwwroot/pics`
+The legacy JSON persistence (`BaseDb.cs`, `PicturesDb.cs`, `UsersDb.cs`) has been deleted; old `*Db*.json` files may still sit in `Db/`.
 
-This is controlled by the `IsProduction` flag in `appsettings.json` and resolved in `PicFileOps.cs`.
+Backups: `BackupFile` runs `VACUUM INTO curation_yyyy-MM-dd_HH-mm-ss.db` in the Db folder. `RestoreFile` copies a backup over `curation.db`. Restore/Delete only accept names containing/starting with `curation_` and are guarded against path traversal.
+
+### Path Resolution
+
+Controlled by `Polson:IsProductionString` (`"true"`/`"false"`) in `appsettings.json`, exposed as `AppSettings.Polson.IsProduction`. Development paths are derived by locating `CurationBack\CurationBack` in the current directory, so the app must be run from within that folder tree. Paths use Windows backslashes.
+
+| | Pictures | Database |
+|---|---|---|
+| Development | `<root>\CurationFront\public\pics\` (sibling repo) | `<root>\CurationBack\CurationBack\Db\` |
+| Production | `<cwd>\wwwroot\pics\` | `<cwd>\Db\` |
+
+The pics path is resolved only in `PicFileOps.cs`; use `PicFileOps.GetImageFileNames()` to list the pics folder. Allowed image extensions: `.jpg`, `.jpeg`, `.png`, `.gif`.
 
 ### Authentication
 
-JWT Bearer tokens are issued on login/register (10-day expiration). Claims include `UserId`, `Email`, `FullName`, and `IsAdmin`. Custom action filters in `Services/FiltersAttributes/` implement `[AdminAuthorize]` and `[UserAuthorize]` for endpoint protection.
+JWT Bearer tokens (HMAC-SHA256, issuer = audience = `Jwt:Issuer`) are issued on login/register with a 10-day expiration, and the latest token is also stored in the `Users.Token` column. Claims: `UserId`, `Email`, `FullName`, `IsAdmin`. Custom filters in `Services/FiltersAttributes/`:
+- `[AdminAuthorize]` — requires `IsAdmin` claim `true`
+- `[UserAuthorize]` — requires a `UserId` claim
+
+`[TypeScriptModel]` marks models shared with the frontend (`PictureItem`, `UserClientRemote`, `UserLogin`, `UserRegister`); it is a marker only.
 
 ### Controllers & Endpoints
 
-| Controller | Route | Notes |
-|---|---|---|
-| `PicturesController` | `/api/pictures` | Picture CRUD, file upload, audit/cleanup |
-| `UsersController` | `/api/users` | Login, register, user management |
-| `DbController` | `/api/db` | Backup, restore, delete (Admin only) |
-| `TestController` | `/api/test` | Public/user/admin test endpoints |
+All routes are `api/[controller]/[action]`.
 
-Key picture operations: `CleanPics` syncs DB records with filesystem; `GetAuditList` uses a full outer join (custom LINQ in `Utilities/ExtLinq.cs`) to find missing or orphaned files. Pictures use a `Seq` field (multiples of 10) for ordering, with resequencing on batch saves.
+| Controller | Notes |
+|---|---|
+| `PicturesController` | Public list/get, `Rss` feed (RSS 2.0, latest 50 `IsRss` pictures by `Ts`), admin CRUD, multipart upload (`SaveWithImg`), audit, `CleanPics`, `ResequencePics`, `RemoveMissing`, `Destroy` |
+| `UsersController` | Login, register, admin user management |
+| `DbController` | Admin only: backup list, download, backup, restore, delete |
+| `TestController` | Public/user/admin test endpoints, `Throw` |
+| `WeatherForecastController` | Template leftover; target of the launch profiles' `launchUrl` |
+
+`GetAuditList` uses the custom full outer join in `Utilities/ExtLinq.cs` to compare DB records with files on disk (`Missing` vs `Orphans`). `CleanPics` resets `IsMissing`, flags missing records, and inserts orphan files as new records. `Seq` orders pictures; `ReSequence` renumbers everything from 100 in steps of 10. `Ts` is a Unix timestamp set on upload.
 
 ### Configuration
 
-`appsettings.json` holds JWT key/issuer (`polson.com`), logging, and `IsProduction`. CORS is configured for `localhost:5050` in development.
+`appsettings.json`: `Polson:IsProductionString`, `Jwt:Key`, `Jwt:Issuer` (`polson.com`), logging. In development, CORS allows `http://localhost:5050` and `http://127.0.0.1:5050` (CurationFront dev server); HTTPS redirection is enabled only outside development.
+
+### Runner
+
+`CurationBack.Runner/Program.cs` builds an `AppSettings` in code (development paths) and calls whichever run is uncommented: `UserRuns.RegisterUser`, `PictureRuns` (`LoadPicturesFromDir`, `MakeTimestamps`, `ListAll`), `DbRuns` (currently all commented out). Edit `Program.cs` to choose the run.

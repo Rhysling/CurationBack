@@ -1,12 +1,10 @@
-using CurationBack.Models;
-using CurationBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CurationBack.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class WeatherForecastController(AppSettings aps) : ControllerBase
+public class WeatherForecastController : ControllerBase
 {
 	private static readonly string[] Summaries =
 	[
@@ -24,16 +22,5 @@ public class WeatherForecastController(AppSettings aps) : ControllerBase
 			TemperatureC = Random.Shared.Next(-20, 55),
 			Summary = Summaries[Random.Shared.Next(Summaries.Length)]
 		})];
-	}
-
-	[HttpGet("[action]")]
-	public string GetDir()
-	{
-		//string dir = Path.Combine(Directory.GetCurrentDirectory(), "Db");
-		//string files = String.Join(',', Directory.GetFiles(dir));
-
-		//return files;
-		return $"JWT: {aps.Jwt.Key} | {aps.Jwt.Issuer}";
-		;
 	}
 }

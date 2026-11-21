@@ -42,6 +42,19 @@ public class PicFileOps
 		File.Delete(Path.Combine(basePath, fileName));
 	}
 
+	public List<string> GetImageFileNames()
+	{
+		return Directory.GetFiles(basePath, "*.*", SearchOption.TopDirectoryOnly)
+			.Where(f => f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+				|| f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+			)
+			.Select(a => new FileInfo(a).Name)
+			.OrderBy(a => a)
+			.ToList();
+	}
+
 	public long GetFileSize(string fileName)
 	{
 		string fullPath = Path.Combine(basePath, fileName);

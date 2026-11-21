@@ -15,15 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Services\BaseDb.cs" />
-    <Compile Remove="Services\PicturesDb.cs" />
-    <Compile Remove="Services\UsersDb.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
