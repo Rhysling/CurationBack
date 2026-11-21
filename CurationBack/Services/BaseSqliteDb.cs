@@ -9,9 +9,17 @@ public class BaseSqliteDb
 	protected readonly string tableName;
 	protected readonly string dbPath;
 	protected readonly string dbFullPath;
+	protected readonly string dbFileName;    // e.g. "curation.db"
+	protected readonly string backupPrefix;  // e.g. "curation_"
+	private readonly string tempFileName;
 
-	public BaseSqliteDb(AppSettings aps, string tableName)
+	// dbName is the file's base name: "curation" (Pictures, Users) or "traffic" (Events, Salts).
+	public BaseSqliteDb(AppSettings aps, string tableName, string dbName = "curation")
 	{
+		dbFileName = $"{dbName}.db";
+		backupPrefix = $"{dbName}_";
+		tempFileName = dbName == "curation" ? "temp.db" : $"temp-{dbName}.db";
+
 		string dir = Directory.GetCurrentDirectory();
 		this.tableName = tableName;
 
@@ -23,7 +31,7 @@ public class BaseSqliteDb
 			dbPath = dir[0..ix] + @"CurationBack\CurationBack\Db\";
 		}
 
-		dbFullPath = Path.Combine(dbPath, "curation.db");
+		dbFullPath = Path.Combine(dbPath, dbFileName);
 		cs = $"Data Source={dbFullPath}";
 	}
 
@@ -60,9 +68,17 @@ public class BaseSqliteDb
 
 	// *** File Operations ***
 
+	// True for this DB's live file ("curation.db") or one of its backups ("curation_*").
+	public bool OwnsFile(string fileName) =>
+		fileName.Equals(dbFileName, StringComparison.OrdinalIgnoreCase) ||
+		fileName.StartsWith(backupPrefix, StringComparison.OrdinalIgnoreCase);
+
+	public bool IsBackupName(string fileName) =>
+		fileName.StartsWith(backupPrefix, StringComparison.OrdinalIgnoreCase);
+
 	public string BackupFile()
 	{
-		string fn = $"curation_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.db";
+		string fn = $"{backupPrefix}{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.db";
 
 		using var conn = Open();
 		var cmd = conn.CreateCommand();
@@ -80,13 +96,20 @@ public class BaseSqliteDb
 
 		if (!File.Exists(fullPath)) return false;
 
-		File.Copy(fullPath, dbFullPath, true);
+		// Online backup API instead of a file copy: safe with open pooled connections and with
+		// WAL mode (a raw copy would leave a stale -wal file to be replayed over the restored data).
+		using (var src = new SqliteConnection($"Data Source={fullPath};Mode=ReadOnly;Pooling=False"))
+		{
+			src.Open();
+			using var dst = Open();
+			src.BackupDatabase(dst);
+		}
 		return true;
 	}
 
 	public void DeleteFile(string fileName)
 	{
-		if (!fileName.StartsWith("curation_", StringComparison.CurrentCultureIgnoreCase))
+		if (!IsBackupName(fileName))
 			return;
 
 		string fullPath = Path.Combine(dbPath, fileName);
@@ -98,12 +121,12 @@ public class BaseSqliteDb
 
 	public FileObj? DownloadFile(string? fileName = null)
 	{
-		fileName ??= "curation.db";
+		fileName ??= dbFileName;
 		byte[] fileBytes;
 
-		if (fileName == "curation.db")
+		if (fileName.Equals(dbFileName, StringComparison.OrdinalIgnoreCase))
 		{
-			string tempPath = Path.Combine(dbPath, "temp.db");
+			string tempPath = Path.Combine(dbPath, tempFileName);
 			File.Delete(tempPath);
 
 			using var conn = Open();
@@ -118,7 +141,7 @@ public class BaseSqliteDb
 		{
 			string fullPath = Path.Combine(dbPath, fileName);
 
-			if (!File.Exists(fullPath))
+			if (!IsWithinDbPath(fullPath) || !File.Exists(fullPath))
 				return null;
 
 			fileBytes = File.ReadAllBytes(fullPath);
@@ -138,8 +161,8 @@ public class BaseSqliteDb
 	{
 		string[] files = Directory.GetFiles(dbPath);
 		return [
-			"curation.db",
-			..files.Where(a => Path.GetFileName(a).StartsWith("curation_") && Path.GetExtension(a).Equals(".db", StringComparison.CurrentCultureIgnoreCase))
+			dbFileName,
+			..files.Where(a => Path.GetFileName(a).StartsWith(backupPrefix) && Path.GetExtension(a).Equals(".db", StringComparison.CurrentCultureIgnoreCase))
 					.Select(a => Path.GetFileName(a))
 					.OrderByDescending(a => a)
 			];

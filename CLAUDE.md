@@ -36,11 +36,13 @@ All data lives in a single SQLite file, `CurationBack/Db/curation.db`, accessed 
 - `UsersSqliteDb` — `Users` table. Passwords hashed with `BCrypt.EnhancedHashPassword` (work factor 13). `SaveItem` upserts but always preserves the existing `PwHash`; passwords change only via `SavePassword`.
 - Both are registered as singletons in `Program.cs`.
 
-**The schema is not created by code.** `curation.db` must already contain `Pictures` and `Users` tables (see README for the schema). The `Db/` folder is gitignored, so the DB and its backups are never committed. Booleans are stored as `INTEGER` 0/1.
+- `TrafficSqliteDb` — cookieless traffic analytics (`Events`, `Salts` tables) in a separate `traffic.db` in the same Db folder (created automatically). `TrafficCollector` handles `POST /api/Traffic/Collect` (anonymous, rate-limited per IP, always 204; never stores/logs raw IP or UA; visitor = SHA-256 with a daily-rotating salt). `TrafficHousekeeping` (BackgroundService) deletes old salts and events past `Traffic:RetentionDays`. Contract: `CurationFront/docs/traffic-backend.md`.
+
+**The Pictures/Users schema is not created by code.** `curation.db` must already contain `Pictures` and `Users` tables (see README for the schema). Only the `traffic.db` tables are created (`CREATE TABLE IF NOT EXISTS`) at startup and after a traffic restore. The `Db/` folder is gitignored, so the DB and its backups are never committed. Booleans are stored as `INTEGER` 0/1.
 
 The legacy JSON persistence (`BaseDb.cs`, `PicturesDb.cs`, `UsersDb.cs`) has been deleted; old `*Db*.json` files may still sit in `Db/`.
 
-Backups: `BackupFile` runs `VACUUM INTO curation_yyyy-MM-dd_HH-mm-ss.db` in the Db folder. `RestoreFile` copies a backup over `curation.db`. Restore/Delete only accept names containing/starting with `curation_` and are guarded against path traversal.
+Backups: `BaseSqliteDb` takes a base file name (`curation` or `traffic`). `BackupFile` runs `VACUUM INTO <name>_yyyy-MM-dd_HH-mm-ss.db` in the Db folder; `RestoreFile` writes a backup into the live file with the SQLite online backup API (safe with open pooled connections). `DbController` lists both DBs' files, backs up both on `Backup`, and routes `GetFile`/`Restore`/`Delete` by file-name prefix. Restore/Delete only accept backup names (`curation_*`, `traffic_*`) and are guarded against path traversal.
 
 ### Path Resolution
 
@@ -70,6 +72,7 @@ All routes are `api/[controller]/[action]`.
 | `PicturesController` | Public list/get, `Rss` feed (RSS 2.0, latest 50 `IsRss` pictures by `Ts`), admin CRUD, multipart upload (`SaveWithImg`), audit, `CleanPics`, `ResequencePics`, `RemoveMissing`, `Destroy` |
 | `UsersController` | Login, register, admin user management |
 | `DbController` | Admin only: backup list, download, backup, restore, delete |
+| `TrafficController` | Anonymous `Collect` beacon; admin `Summary`, `TimeSeries`, `Breakdown`, `Realtime` reports |
 | `TestController` | Public/user/admin test endpoints, `Throw` |
 | `WeatherForecastController` | Template leftover; target of the launch profiles' `launchUrl` |
 
@@ -77,7 +80,7 @@ All routes are `api/[controller]/[action]`.
 
 ### Configuration
 
-`appsettings.json`: `Polson:IsProductionString`, `Jwt:Key`, `Jwt:Issuer` (`polson.com`), logging. In development, CORS allows `http://localhost:5050` and `http://127.0.0.1:5050` (CurationFront dev server); HTTPS redirection is enabled only outside development.
+`appsettings.json`: `Polson:IsProductionString`, `Jwt:Key`, `Jwt:Issuer` (`polson.com`), `Traffic` (`SiteKey`, `OwnHosts`, `RetentionDays`, `CollectPermitsPerMinute`, `AllowedEventNames`), logging. `traffic.db` never uses WAL (production storage is a network share); startup forces `journal_mode=DELETE`. A `Jwt__Key` environment variable overrides `Jwt:Key` on the dev machine. In development, CORS allows `http://localhost:5050` and `http://127.0.0.1:5050` (CurationFront dev server); HTTPS redirection is enabled only outside development.
 
 ### Runner
 
